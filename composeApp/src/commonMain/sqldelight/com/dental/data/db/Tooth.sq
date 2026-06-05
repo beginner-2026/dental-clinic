@@ -1,0 +1,19 @@
+CREATE TABLE ToothEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    patientId INTEGER NOT NULL,
+    number INTEGER NOT NULL,
+    arch TEXT NOT NULL,
+    quadrant INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PRESENT'
+);
+
+getByPatientId:
+SELECT * FROM ToothEntity WHERE patientId = ?;
+
+upsert:
+INSERT OR REPLACE INTO ToothEntity(id, patientId, number, arch, quadrant, status)
+VALUES (?, ?, ?, ?, ?, ?);
+
+insert:
+INSERT INTO ToothEntity(patientId, number, arch, quadrant, status)
+VALUES (?, ?, ?, ?, ?);

@@ -1,0 +1,46 @@
+CREATE TABLE InvoiceEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    patientId INTEGER NOT NULL,
+    title TEXT,
+    dateCreated INTEGER NOT NULL,
+    dateUpdated INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'NEW',
+    discountPercent REAL NOT NULL DEFAULT 0,
+    totalBeforeDiscount INTEGER NOT NULL DEFAULT 0,
+    discountAmount INTEGER NOT NULL DEFAULT 0,
+    totalAfterDiscount INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE InvoiceItemEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    invoiceId INTEGER NOT NULL,
+    serviceName TEXT NOT NULL,
+    serviceCode TEXT,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unitPrice INTEGER NOT NULL,
+    lineTotal INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (invoiceId) REFERENCES InvoiceEntity(id)
+);
+
+getInvoicesByPatient:
+SELECT * FROM InvoiceEntity WHERE patientId = ? ORDER BY dateCreated DESC;
+
+getInvoiceById:
+SELECT * FROM InvoiceEntity WHERE id = ?;
+
+getItemsByInvoiceId:
+SELECT * FROM InvoiceItemEntity WHERE invoiceId = ?;
+
+insertInvoice:
+INSERT INTO InvoiceEntity(patientId, title, dateCreated, dateUpdated, status, discountPercent, totalBeforeDiscount, discountAmount, totalAfterDiscount)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+insertInvoiceItem:
+INSERT INTO InvoiceItemEntity(invoiceId, serviceName, serviceCode, quantity, unitPrice, lineTotal)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateInvoiceStatus:
+UPDATE InvoiceEntity SET status = ?, dateUpdated = ? WHERE id = ?;
+
+deleteInvoiceItem:
+DELETE FROM InvoiceItemEntity WHERE id = ?;

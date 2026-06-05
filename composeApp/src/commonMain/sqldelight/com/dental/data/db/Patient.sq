@@ -1,0 +1,31 @@
+CREATE TABLE PatientEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    lastName TEXT NOT NULL,
+    firstName TEXT NOT NULL,
+    middleName TEXT,
+    birthDate INTEGER,
+    phone TEXT,
+    email TEXT,
+    sex TEXT NOT NULL DEFAULT 'MALE',
+    notes TEXT,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+getAll:
+SELECT * FROM PatientEntity ORDER BY lastName, firstName;
+
+getById:
+SELECT * FROM PatientEntity WHERE id = ?;
+
+search:
+SELECT * FROM PatientEntity
+WHERE lastName LIKE ? || '%' OR firstName LIKE ? || '%' OR phone LIKE ? || '%'
+ORDER BY lastName, firstName;
+
+insert:
+INSERT INTO PatientEntity(lastName, firstName, middleName, birthDate, phone, email, sex, notes, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+getLastInsertId:
+SELECT last_insert_rowid();
