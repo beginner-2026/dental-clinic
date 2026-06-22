@@ -1,24 +1,9 @@
 # AGENTS.md — DentalClinic
 
-## Shell / окружение
-
-- **Shell сломан**: PowerShell `ChildProcess.kill` на каждой команде. Для сборки используй `cmd /c "..."`.
-- **Git**: установлен portable в `C:\tools\git\bin\git.exe`. Не в PATH — добавляй вручную (`$env:Path += ";C:\tools\git\bin"`).
-- **Remote**: `origin` → `github.com/beginner-2026/dental-clinic.git`, URL содержит PAT для push без пароля.
-- **Две копии проекта**:
-  - `C:\DentalClinic` — основной (сборка, запуск)
-  - `C:\Users\Геннадий\Documents\OpenCode\1` — рабочая область (в ней Скриншоты, ТЗ, этот AGENTS.md)
-  Все правки — только в `C:\DentalClinic`.
+## Основное
+- отвечать только по-русски
 
 ## Сборка / запуск
-
-- **Desktop**: `gradlew.bat :composeApp:run` (или `run.dental` — лаунчер с проверками)
-- **Nuclear rebuild**: `build_run.bat` — убивает java/gradle, удаляет БД, `clean --rerun-tasks`
-- **Быстрая проверка компиляции**: `gradlew.bat :composeApp:compileKotlinDesktop`
-- **Gradle home**: `-g C:\dental-cache` (передан в `gradlew.bat`)
-- **Configuration cache**: включён (`gradle.properties`). При проблемах: `--no-configuration-cache`
-- **JDK**: 17
-- **Версии ключевые**: Kotlin 2.1.0, Compose Multiplatform 1.7.1, SQLDelight 2.0.2
 
 ## Архитектура
 
@@ -57,7 +42,7 @@
 
 ## Прочее
 
-- **Git**: репозиторий есть (origin: github.com/beginner-2026/dental-clinic.git), но git не установлен
+- **Git**: репозиторий есть (origin: github.com/beginner-2026/dental-clinic.git)
 - **Gradle cache**: `.gradle-home/` — пустая директория в Git (не в .gitignore)
 - **ProGuard**: включён (`isMinifyEnabled = true`) для release Android
 - **Java module**: для desktop подключён `java.sql` (для JDBC/SQLite)
