@@ -1,0 +1,26 @@
+CREATE TABLE ProstheticItemEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    patientId INTEGER NOT NULL,
+    toothIds TEXT NOT NULL,
+    type TEXT NOT NULL,
+    material TEXT NOT NULL,
+    stage TEXT NOT NULL,
+    createdAt INTEGER NOT NULL,
+    updatedAt INTEGER NOT NULL
+);
+
+getByPatientId:
+SELECT * FROM ProstheticItemEntity WHERE patientId = ?;
+
+getById:
+SELECT * FROM ProstheticItemEntity WHERE id = ?;
+
+insert:
+INSERT INTO ProstheticItemEntity(patientId, toothIds, type, material, stage, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteById:
+DELETE FROM ProstheticItemEntity WHERE id = ?;
+
+deleteByPatientId:
+DELETE FROM ProstheticItemEntity WHERE patientId = ?;

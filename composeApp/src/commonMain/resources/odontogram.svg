@@ -1,0 +1,338 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%">
+  <defs>
+    <linearGradient id="enamel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#EDE8DD"/>
+      <stop offset="30%" stop-color="#FFF8F0"/>
+      <stop offset="70%" stop-color="#FFF8F0"/>
+      <stop offset="100%" stop-color="#E8E0D0"/>
+    </linearGradient>
+    <linearGradient id="rootGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8DCC8"/>
+      <stop offset="100%" stop-color="#D4C8B0"/>
+    </linearGradient>
+    <linearGradient id="boneBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D7CCC8" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#D7CCC8" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="toothShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0.5" dy="0.5" stdDeviation="1" flood-color="#000" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#FAFAFA"/>
+
+  <!-- ============ UPPER JAW ============ -->
+  <g id="upper-jaw" transform="translate(0, 50)">
+    <text x="70" y="30" font-family="Arial, sans-serif" font-size="18" fill="#616161" font-weight="bold">Верхняя челюсть</text>
+    <rect x="60" y="40" width="1800" height="200" rx="6" fill="url(#boneBg)"/>
+
+    <!-- Upper-18: molar, 2.5x wide, 3 roots -->
+    <g id="upper-18" transform="translate(72, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">18</text>
+    </g>
+
+    <!-- Upper-17: molar -->
+    <g id="upper-17" transform="translate(184, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">17</text>
+    </g>
+
+    <!-- Upper-16: molar -->
+    <g id="upper-16" transform="translate(296, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">16</text>
+    </g>
+
+    <!-- Upper-15: premolar, 2x wide, 2 roots -->
+    <g id="upper-15" transform="translate(408, 50)">
+      <path d="M19,90 L18,22 C16,16 56,14 94,16 L95,22 L95,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M30,90 C28,120 26,148 35,152 C44,150 46,130 47,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M65,90 C66,130 68,150 77,152 C86,148 84,120 82,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M21,90 C42,86 70,86 93,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">15</text>
+    </g>
+
+    <!-- Upper-14: premolar, 2x wide, 2 roots -->
+    <g id="upper-14" transform="translate(520, 50)">
+      <path d="M19,90 L18,22 C16,16 56,14 94,16 L95,22 L95,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M30,90 C28,120 26,148 35,152 C44,150 46,130 47,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M65,90 C66,130 68,150 77,152 C86,148 84,120 82,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M21,90 C42,86 70,86 93,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">14</text>
+    </g>
+
+    <!-- Upper-13: canine, standard width, 1 root -->
+    <g id="upper-13" transform="translate(632, 50)">
+      <path d="M38,90 L37,25 C35,18 56,15 75,18 L76,25 L76,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M45,90 C44,115 46,140 56,145 C66,140 68,115 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M39,90 C54,86 60,86 75,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">13</text>
+    </g>
+
+    <!-- Upper-12: lateral incisor, standard -->
+    <g id="upper-12" transform="translate(744, 50)">
+      <path d="M38,90 L38,28 C36,22 56,20 74,22 L74,28 L74,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M46,90 C45,115 47,135 56,140 C65,135 67,115 66,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M40,90 C54,86 58,86 74,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">12</text>
+    </g>
+
+    <!-- Upper-11: central incisor, standard -->
+    <g id="upper-11" transform="translate(856, 50)">
+      <path d="M38,90 L38,25 C36,18 56,16 74,18 L74,25 L74,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M46,90 C45,110 47,130 56,135 C65,130 67,110 66,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M40,90 C54,86 58,86 74,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">11</text>
+    </g>
+
+    <!-- Midline -->
+    <line x1="960" y1="40" x2="960" y2="250" stroke="#E0E0E0" stroke-width="1" stroke-dasharray="3,3"/>
+
+    <!-- Upper-21: central incisor -->
+    <g id="upper-21" transform="translate(968, 50)">
+      <path d="M38,90 L38,25 C36,18 56,16 74,18 L74,25 L74,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M46,90 C45,110 47,130 56,135 C65,130 67,110 66,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M40,90 C54,86 58,86 74,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">21</text>
+    </g>
+
+    <!-- Upper-22: lateral incisor -->
+    <g id="upper-22" transform="translate(1080, 50)">
+      <path d="M38,90 L38,28 C36,22 56,20 74,22 L74,28 L74,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M46,90 C45,115 47,135 56,140 C65,135 67,115 66,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M40,90 C54,86 58,86 74,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">22</text>
+    </g>
+
+    <!-- Upper-23: canine -->
+    <g id="upper-23" transform="translate(1192, 50)">
+      <path d="M38,90 L37,25 C35,18 56,15 75,18 L76,25 L76,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M45,90 C44,115 46,140 56,145 C66,140 68,115 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M39,90 C54,86 60,86 75,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">23</text>
+    </g>
+
+    <!-- Upper-24: premolar, 2x wide, 2 roots -->
+    <g id="upper-24" transform="translate(1304, 50)">
+      <path d="M19,90 L18,22 C16,16 56,14 94,16 L95,22 L95,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M30,90 C28,120 26,148 35,152 C44,150 46,130 47,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M65,90 C66,130 68,150 77,152 C86,148 84,120 82,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M21,90 C42,86 70,86 93,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">24</text>
+    </g>
+
+    <!-- Upper-25: premolar, 2x wide, 2 roots -->
+    <g id="upper-25" transform="translate(1416, 50)">
+      <path d="M19,90 L18,22 C16,16 56,14 94,16 L95,22 L95,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M30,90 C28,120 26,148 35,152 C44,150 46,130 47,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M65,90 C66,130 68,150 77,152 C86,148 84,120 82,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M21,90 C42,86 70,86 93,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">25</text>
+    </g>
+
+    <!-- Upper-26: molar -->
+    <g id="upper-26" transform="translate(1528, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">26</text>
+    </g>
+
+    <!-- Upper-27: molar -->
+    <g id="upper-27" transform="translate(1640, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">27</text>
+    </g>
+
+    <!-- Upper-28: molar -->
+    <g id="upper-28" transform="translate(1752, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">28</text>
+    </g>
+
+    <text x="70" y="240" font-family="Arial, sans-serif" font-size="12" fill="#9E9E9E">Правая</text>
+    <text x="1850" y="240" font-family="Arial, sans-serif" font-size="12" fill="#9E9E9E">Левая</text>
+  </g>
+
+  <!-- Numbering label -->
+  <text x="960" y="300" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#9E9E9E">Нумерация FDI</text>
+
+  <!-- ============ LOWER JAW ============ -->
+  <g id="lower-jaw" transform="translate(0, 340)">
+    <text x="70" y="30" font-family="Arial, sans-serif" font-size="18" fill="#616161" font-weight="bold">Нижняя челюсть</text>
+    <rect x="60" y="40" width="1800" height="200" rx="6" fill="url(#boneBg)"/>
+
+    <!-- Lower-48: molar, 2.5x wide, 3 roots -->
+    <g id="lower-48" transform="translate(72, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">48</text>
+    </g>
+
+    <!-- Lower-47: molar -->
+    <g id="lower-47" transform="translate(184, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">47</text>
+    </g>
+
+    <!-- Lower-46: molar -->
+    <g id="lower-46" transform="translate(296, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">46</text>
+    </g>
+
+    <!-- Lower-45: premolar, 2x wide, 2 roots -->
+    <g id="lower-45" transform="translate(408, 50)">
+      <path d="M19,90 L18,22 C16,16 56,14 94,16 L95,22 L95,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M30,90 C28,120 26,148 35,152 C44,150 46,130 47,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M65,90 C66,130 68,150 77,152 C86,148 84,120 82,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M21,90 C42,86 70,86 93,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">45</text>
+    </g>
+
+    <!-- Lower-44: premolar, 2x wide, 2 roots -->
+    <g id="lower-44" transform="translate(520, 50)">
+      <path d="M19,90 L18,22 C16,16 56,14 94,16 L95,22 L95,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M30,90 C28,120 26,148 35,152 C44,150 46,130 47,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M65,90 C66,130 68,150 77,152 C86,148 84,120 82,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M21,90 C42,86 70,86 93,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">44</text>
+    </g>
+
+    <!-- Lower-43: canine, standard -->
+    <g id="lower-43" transform="translate(632, 50)">
+      <path d="M38,90 L37,25 C35,18 56,15 75,18 L76,25 L76,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M45,90 C44,115 46,140 56,145 C66,140 68,115 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M39,90 C54,86 60,86 75,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">43</text>
+    </g>
+
+    <!-- Lower-42: lateral incisor, standard -->
+    <g id="lower-42" transform="translate(744, 50)">
+      <path d="M38,90 L38,28 C36,22 56,20 74,22 L74,28 L74,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M46,90 C45,115 47,135 56,140 C65,135 67,115 66,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M40,90 C54,86 58,86 74,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">42</text>
+    </g>
+
+    <!-- Lower-41: central incisor, standard -->
+    <g id="lower-41" transform="translate(856, 50)">
+      <path d="M38,90 L38,25 C36,18 56,16 74,18 L74,25 L74,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M46,90 C45,110 47,130 56,135 C65,130 67,110 66,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M40,90 C54,86 58,86 74,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">41</text>
+    </g>
+
+    <!-- Midline -->
+    <line x1="960" y1="40" x2="960" y2="250" stroke="#E0E0E0" stroke-width="1" stroke-dasharray="3,3"/>
+
+    <!-- Lower-31: central incisor, standard -->
+    <g id="lower-31" transform="translate(968, 50)">
+      <path d="M38,90 L38,25 C36,18 56,16 74,18 L74,25 L74,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M46,90 C45,110 47,130 56,135 C65,130 67,110 66,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M40,90 C54,86 58,86 74,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">31</text>
+    </g>
+
+    <!-- Lower-32: lateral incisor, standard -->
+    <g id="lower-32" transform="translate(1080, 50)">
+      <path d="M38,90 L38,28 C36,22 56,20 74,22 L74,28 L74,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M46,90 C45,115 47,135 56,140 C65,135 67,115 66,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M40,90 C54,86 58,86 74,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">32</text>
+    </g>
+
+    <!-- Lower-33: canine, standard -->
+    <g id="lower-33" transform="translate(1192, 50)">
+      <path d="M38,90 L37,25 C35,18 56,15 75,18 L76,25 L76,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M45,90 C44,115 46,140 56,145 C66,140 68,115 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M39,90 C54,86 60,86 75,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">33</text>
+    </g>
+
+    <!-- Lower-34: premolar, 2x wide, 2 roots -->
+    <g id="lower-34" transform="translate(1304, 50)">
+      <path d="M19,90 L18,22 C16,16 56,14 94,16 L95,22 L95,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M30,90 C28,120 26,148 35,152 C44,150 46,130 47,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M65,90 C66,130 68,150 77,152 C86,148 84,120 82,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M21,90 C42,86 70,86 93,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">34</text>
+    </g>
+
+    <!-- Lower-35: premolar, 2x wide, 2 roots -->
+    <g id="lower-35" transform="translate(1416, 50)">
+      <path d="M19,90 L18,22 C16,16 56,14 94,16 L95,22 L95,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M30,90 C28,120 26,148 35,152 C44,150 46,130 47,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M65,90 C66,130 68,150 77,152 C86,148 84,120 82,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M21,90 C42,86 70,86 93,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">35</text>
+    </g>
+
+    <!-- Lower-36: molar -->
+    <g id="lower-36" transform="translate(1528, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">36</text>
+    </g>
+
+    <!-- Lower-37: molar -->
+    <g id="lower-37" transform="translate(1640, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">37</text>
+    </g>
+
+    <!-- Lower-38: molar -->
+    <g id="lower-38" transform="translate(1752, 50)">
+      <path d="M12,90 L10,20 C8,14 56,12 100,14 L102,20 L102,90 Z" fill="url(#enamel)" stroke="#BDBDBD" stroke-width="0.7" filter="url(#toothShadow)"/>
+      <path d="M22,90 C16,120 10,148 22,155 C30,150 34,130 38,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M45,90 C46,130 48,155 56,158 C64,155 66,130 67,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M74,90 C78,130 82,150 90,155 C102,148 96,120 92,90 Z" fill="url(#rootGrad)" stroke="#D7CCC8" stroke-width="0.8"/>
+      <path d="M14,90 C40,86 72,86 100,90" fill="none" stroke="#90A4AE" stroke-width="0.9" opacity="0.45"/>
+      <text x="56" y="178" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#757575">38</text>
+    </g>
+
+    <text x="70" y="240" font-family="Arial, sans-serif" font-size="12" fill="#9E9E9E">Правая</text>
+    <text x="1850" y="240" font-family="Arial, sans-serif" font-size="12" fill="#9E9E9E">Левая</text>
+  </g>
+</svg>

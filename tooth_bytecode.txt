@@ -1,0 +1,103 @@
+Compiled from "ToothQueries.kt"
+final class com.dental.data.db.ToothQueries$GetByPatientIdAndExamTypeQuery<T> extends app.cash.sqldelight.Query<T> {
+  final com.dental.data.db.ToothQueries this$0;
+
+  public com.dental.data.db.ToothQueries$GetByPatientIdAndExamTypeQuery(long, java.lang.String, kotlin.jvm.functions.Function1<? super app.cash.sqldelight.db.SqlCursor, ? extends T>);
+    Code:
+       0: aload         5
+       2: ldc           #12                 // String mapper
+       4: invokestatic  #18                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       7: aload_0
+       8: aload_1
+       9: putfield      #22                 // Field this$0:Lcom/dental/data/db/ToothQueries;
+      12: aload_0
+      13: aload         5
+      15: invokespecial #25                 // Method app/cash/sqldelight/Query."<init>":(Lkotlin/jvm/functions/Function1;)V
+      18: aload_0
+      19: lload_2
+      20: putfield      #29                 // Field patientId:J
+      23: aload_0
+      24: aload         4
+      26: putfield      #33                 // Field examType:Ljava/lang/String;
+      29: return
+
+  public final long getPatientId();
+    Code:
+       0: aload_0
+       1: getfield      #29                 // Field patientId:J
+       4: lreturn
+
+  public final java.lang.String getExamType();
+    Code:
+       0: aload_0
+       1: getfield      #33                 // Field examType:Ljava/lang/String;
+       4: areturn
+
+  public void addListener(app.cash.sqldelight.Query$Listener);
+    Code:
+       0: aload_1
+       1: ldc           #44                 // String listener
+       3: invokestatic  #18                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_0
+       7: getfield      #22                 // Field this$0:Lcom/dental/data/db/ToothQueries;
+      10: invokestatic  #50                 // Method com/dental/data/db/ToothQueries.access$getDriver:(Lcom/dental/data/db/ToothQueries;)Lapp/cash/sqldelight/db/SqlDriver;
+      13: iconst_1
+      14: anewarray     #52                 // class java/lang/String
+      17: astore_2
+      18: aload_2
+      19: iconst_0
+      20: ldc           #54                 // String ToothEntity
+      22: aastore
+      23: aload_2
+      24: aload_1
+      25: invokeinterface #59,  3           // InterfaceMethod app/cash/sqldelight/db/SqlDriver.addListener:([Ljava/lang/String;Lapp/cash/sqldelight/Query$Listener;)V
+      30: return
+
+  public void removeListener(app.cash.sqldelight.Query$Listener);
+    Code:
+       0: aload_1
+       1: ldc           #44                 // String listener
+       3: invokestatic  #18                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_0
+       7: getfield      #22                 // Field this$0:Lcom/dental/data/db/ToothQueries;
+      10: invokestatic  #50                 // Method com/dental/data/db/ToothQueries.access$getDriver:(Lcom/dental/data/db/ToothQueries;)Lapp/cash/sqldelight/db/SqlDriver;
+      13: iconst_1
+      14: anewarray     #52                 // class java/lang/String
+      17: astore_2
+      18: aload_2
+      19: iconst_0
+      20: ldc           #54                 // String ToothEntity
+      22: aastore
+      23: aload_2
+      24: aload_1
+      25: invokeinterface #63,  3           // InterfaceMethod app/cash/sqldelight/db/SqlDriver.removeListener:([Ljava/lang/String;Lapp/cash/sqldelight/Query$Listener;)V
+      30: return
+
+  public <R> app.cash.sqldelight.db.QueryResult<R> execute(kotlin.jvm.functions.Function1<? super app.cash.sqldelight.db.SqlCursor, ? extends app.cash.sqldelight.db.QueryResult<R>>);
+    Code:
+       0: aload_1
+       1: ldc           #12                 // String mapper
+       3: invokestatic  #18                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_0
+       7: getfield      #22                 // Field this$0:Lcom/dental/data/db/ToothQueries;
+      10: invokestatic  #50                 // Method com/dental/data/db/ToothQueries.access$getDriver:(Lcom/dental/data/db/ToothQueries;)Lapp/cash/sqldelight/db/SqlDriver;
+      13: aconst_null
+      14: aload_0
+      15: getfield      #33                 // Field examType:Ljava/lang/String;
+      18: ifnonnull     26
+      21: ldc           #68                 // String IS
+      23: goto          28
+      26: ldc           #70                 // String =
+      28: invokedynamic #82,  0             // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      33: aload_1
+      34: iconst_2
+      35: aload_0
+      36: invokedynamic #102,  0            // InvokeDynamic #1:invoke:(Lcom/dental/data/db/ToothQueries$GetByPatientIdAndExamTypeQuery;)Lkotlin/jvm/functions/Function1;
+      41: invokeinterface #106,  6          // InterfaceMethod app/cash/sqldelight/db/SqlDriver.executeQuery:(Ljava/lang/Integer;Ljava/lang/String;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/functions/Function1;)Lapp/cash/sqldelight/db/QueryResult;
+      46: areturn
+
+  public java.lang.String toString();
+    Code:
+       0: ldc           #111                // String Tooth.sq:getByPatientIdAndExamType
+       2: areturn
+}

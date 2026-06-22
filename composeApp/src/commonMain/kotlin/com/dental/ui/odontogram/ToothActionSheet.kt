@@ -2,9 +2,7 @@ package com.dental.ui.odontogram
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +12,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dental.model.*
+
+private val GreenColor = Color(0xFF4CAF50)
+private val BlackColor = Color(0xFF212121)
+private val LightBlueColor = Color(0xFF03A9F4)
+private val PinkColor = Color(0xFFE91E63)
+private val OrangeColor = Color(0xFFFF9800)
+
+private val constructionTypes = listOf(
+    ConstructionType("МКК", "Металлокерамическая коронка", GreenColor, ProstheticType.CROWN, ProstheticMaterial.METAL_CERAMIC),
+    ConstructionType("ЦЛК", "Цельнолитая коронка", BlackColor, ProstheticType.CROWN, ProstheticMaterial.METAL),
+    ConstructionType("ОЦК", "Коронка из диоксида циркония", LightBlueColor, ProstheticType.CROWN, ProstheticMaterial.ZIRCONIUM),
+    ConstructionType("ЦКК", "Цельнокерамическая коронка", PinkColor, ProstheticType.CROWN, ProstheticMaterial.CERAMIC),
+    ConstructionType("Искусственный зуб МК", "Металлокерамический искусственный зуб", GreenColor, ProstheticType.PONTIC, ProstheticMaterial.METAL_CERAMIC),
+    ConstructionType("Искусственный зуб ЦЛ", "Цельнолитой искусственный зуб", BlackColor, ProstheticType.PONTIC, ProstheticMaterial.METAL),
+    ConstructionType("Временная коронка", "Временная коронка", OrangeColor, ProstheticType.TEMPORARY, ProstheticMaterial.COMPOSITE)
+)
+
+private data class ConstructionType(
+    val label: String,
+    val description: String,
+    val color: Color,
+    val prostheticType: ProstheticType,
+    val prostheticMaterial: ProstheticMaterial
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,11 +49,6 @@ fun ToothActionSheet(
     onToggleBridgeMode: () -> Unit,
     onChangeToothStatus: (ToothStatus) -> Unit
 ) {
-    var step by remember { mutableStateOf(0) }
-    var selectedType by remember { mutableStateOf<ProstheticType?>(null) }
-    var selectedMaterial by remember { mutableStateOf<ProstheticMaterial?>(null) }
-    var selectedStage by remember { mutableStateOf(ProstheticStage.PLANNED) }
-
     val existing = existingProsthetics.firstOrNull { it.toothIds.contains(toothNumber) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -40,208 +57,84 @@ fun ToothActionSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
-                .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "Tooth #${toothNumber}",
+                text = "Зуб №${toothNumber}",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             if (existing != null) {
+                val name = constructionTypes.find {
+                    it.prostheticType == existing.type && it.prostheticMaterial == existing.material
+                }?.label ?: existing.type.name
                 Text(
-                    text = "Current: ${existing.type.name} (${existing.stage.name})",
+                    text = "Текущее: $name (${stageName(existing.stage)})",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(
-                text = "Status: ${toothStatus.name}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
             Spacer(Modifier.height(16.dp))
 
-            // Tooth status bar
-            Text("Tooth status:", style = MaterialTheme.typography.labelMedium)
-            Spacer(Modifier.height(4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                ToothStatus.entries.forEach { status ->
-                    FilterChip(
-                        selected = toothStatus == status,
-                        onClick = { onChangeToothStatus(status) },
-                        label = { Text(status.name, fontSize = 11.sp) }
+            Text("Выберите конструкцию:", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(8.dp))
+
+            constructionTypes.forEach { item ->
+                ElevatedButton(
+                    onClick = {
+                        val stage = ProstheticStage.COMPLETED
+                        if (item.prostheticType == ProstheticType.PONTIC) {
+                            onChangeToothStatus(ToothStatus.MISSING)
+                        } else {
+                            onChangeToothStatus(ToothStatus.PRESENT)
+                        }
+                        onSelectProsthetic(item.prostheticType, item.prostheticMaterial, stage)
+                        onDismiss()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp),
+                    colors = ButtonDefaults.elevatedButtonColors(
+                        containerColor = item.color.copy(alpha = 0.12f)
                     )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .background(item.color, RoundedCornerShape(4.dp))
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(item.label, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Text(item.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(8.dp))
-            Text("Prosthetics:", style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(8.dp))
-
-            when (step) {
-                0 -> TypeSelectionStep(
-                    selectedType = selectedType,
-                    isBridgeMode = isBridgeMode,
-                    onSelect = { type ->
-                        selectedType = type
-                        if (type == ProstheticType.REMOVAL) {
-                            onSelectProsthetic(ProstheticType.REMOVAL, ProstheticMaterial.COMPOSITE, ProstheticStage.COMPLETED)
-                            onDismiss()
-                        } else if (type == ProstheticType.BRIDGE && !isBridgeMode) {
-                            onToggleBridgeMode()
-                            onDismiss()
-                        } else {
-                            step = 1
-                        }
-                    }
-                )
-                1 -> MaterialSelectionStep(
-                    onSelect = { material ->
-                        selectedMaterial = material
-                        step = 2
+            // Remove existing prosthetic
+            if (existing != null) {
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        onSelectProsthetic(ProstheticType.REMOVAL, ProstheticMaterial.COMPOSITE, ProstheticStage.COMPLETED)
+                        onDismiss()
                     },
-                    onBack = { step = 0 }
-                )
-                2 -> StageSelectionStep(
-                    onSelect = { stage ->
-                        selectedStage = stage
-                        selectedType?.let { type ->
-                            selectedMaterial?.let { material ->
-                                onSelectProsthetic(type, material, stage)
-                                onDismiss()
-                            }
-                        }
-                    },
-                    onBack = { step = 1 }
-                )
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Удалить конструкцию")
+                }
             }
         }
     }
 }
 
-@Composable
-private fun TypeSelectionStep(
-    selectedType: ProstheticType?,
-    isBridgeMode: Boolean,
-    onSelect: (ProstheticType) -> Unit
-) {
-    Text("Select type:", style = MaterialTheme.typography.titleSmall)
-    Spacer(Modifier.height(8.dp))
-
-    val types = listOf(
-        TypeOption(ProstheticType.CROWN, "Crown", "\u2B24"),
-        TypeOption(ProstheticType.BRIDGE, "Bridge", "\u2550"),
-        TypeOption(ProstheticType.IMPLANT, "Implant", "\u2699"),
-        TypeOption(ProstheticType.POST_CORE, "Post/Core", "\u29B6"),
-        TypeOption(ProstheticType.PONTIC, "Pontic", "\u25A3"),
-        TypeOption(ProstheticType.TEMPORARY, "Temporary", "\u23F1"),
-        TypeOption(ProstheticType.REMOVAL, "Remove", "\u2716"),
-    )
-
-    types.forEach { option ->
-        ElevatedButton(
-            onClick = { onSelect(option.type) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = if (selectedType == option.type) {
-                ButtonDefaults.elevatedButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            } else {
-                ButtonDefaults.elevatedButtonColors()
-            }
-        ) {
-            Text(option.icon, fontSize = 18.sp)
-            Spacer(Modifier.width(12.dp))
-            Text(option.label, modifier = Modifier.weight(1f))
-        }
-    }
-
-    if (isBridgeMode) {
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Tap first and last abutment tooth",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
+private fun stageName(stage: ProstheticStage): String = when (stage) {
+    ProstheticStage.EXISTING -> "существующая"
+    ProstheticStage.PLANNED -> "запланировано"
+    ProstheticStage.IN_PROGRESS -> "в работе"
+    ProstheticStage.COMPLETED -> "выполнено"
 }
-
-@Composable
-private fun MaterialSelectionStep(
-    onSelect: (ProstheticMaterial) -> Unit,
-    onBack: () -> Unit
-) {
-    Text("Select material:", style = MaterialTheme.typography.titleSmall)
-    Spacer(Modifier.height(8.dp))
-
-    val materials = listOf(
-        MaterialOption(ProstheticMaterial.METAL_CERAMIC, "MC", Color(0xFF757575)),
-        MaterialOption(ProstheticMaterial.ZIRCONIUM, "Zr", Color(0xFF7B1FA2)),
-        MaterialOption(ProstheticMaterial.METAL, "Metal", Color(0xFFBDBDBD)),
-        MaterialOption(ProstheticMaterial.COMPOSITE, "Composite", Color(0xFFFFF9C4)),
-        MaterialOption(ProstheticMaterial.CERAMIC, "Ceramic", Color(0xFFF3E5F5))
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        materials.forEach { option ->
-            ElevatedButton(
-                onClick = { onSelect(option.material) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.elevatedButtonColors(
-                    containerColor = option.color.copy(alpha = 0.2f)
-                )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .background(option.color, RoundedCornerShape(2.dp))
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(option.label, modifier = Modifier.weight(1f))
-            }
-        }
-    }
-
-    Spacer(Modifier.height(12.dp))
-    TextButton(onClick = onBack) { Text("Back") }
-}
-
-@Composable
-private fun StageSelectionStep(
-    onSelect: (ProstheticStage) -> Unit,
-    onBack: () -> Unit
-) {
-    Text("Select stage:", style = MaterialTheme.typography.titleSmall)
-    Spacer(Modifier.height(8.dp))
-
-    val stages = listOf(
-        StageOption(ProstheticStage.EXISTING, "Existing", "\u25CB"),
-        StageOption(ProstheticStage.PLANNED, "Planned", "\u25CC"),
-        StageOption(ProstheticStage.IN_PROGRESS, "In progress", "\u23F3"),
-        StageOption(ProstheticStage.COMPLETED, "Completed", "\u2713")
-    )
-
-    stages.forEach { option ->
-        ElevatedButton(
-            onClick = { onSelect(option.stage) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-        ) {
-            Text(option.icon, fontSize = 18.sp)
-            Spacer(Modifier.width(12.dp))
-            Text(option.label, modifier = Modifier.weight(1f))
-        }
-    }
-
-    Spacer(Modifier.height(12.dp))
-    TextButton(onClick = onBack) { Text("Back") }
-}
-
-private data class TypeOption(val type: ProstheticType, val label: String, val icon: String)
-private data class MaterialOption(val material: ProstheticMaterial, val label: String, val color: Color)
-private data class StageOption(val stage: ProstheticStage, val label: String, val icon: String)

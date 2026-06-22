@@ -27,17 +27,17 @@ fun PatientScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Patients") },
+                title = { Text("Пациенты") },
                 navigationIcon = {
                     IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        Icon(Icons.Default.Menu, contentDescription = "Меню")
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddPatient) {
-                Icon(Icons.Default.Add, contentDescription = "Add Patient")
+                Icon(Icons.Default.Add, contentDescription = "Добавить пациента")
             }
         }
     ) { padding ->
@@ -50,19 +50,19 @@ fun PatientScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search patients...") },
+                placeholder = { Text("Поиск пациентов...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            val filteredPatients = if (searchQuery.isBlank()) patients
+            val filteredPatients = (if (searchQuery.isBlank()) patients
             else patients.filter {
                 it.lastName.contains(searchQuery, ignoreCase = true) ||
                 it.firstName.contains(searchQuery, ignoreCase = true) ||
                 it.phone?.contains(searchQuery) == true
-            }
+            }).sortedBy { "${it.lastName} ${it.firstName}" }
 
             LazyColumn {
                 items(filteredPatients) { patient ->

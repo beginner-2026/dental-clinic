@@ -1,0 +1,119 @@
+Compiled from "DentalDatabaseImpl.kt"
+public final class com.dental.data.db.composeApp.DentalDatabaseImpl$Schema implements app.cash.sqldelight.db.SqlSchema<app.cash.sqldelight.db.QueryResult$Value<kotlin.Unit>> {
+  public static final com.dental.data.db.composeApp.DentalDatabaseImpl$Schema INSTANCE;
+
+  public static final int $stable;
+
+  private com.dental.data.db.composeApp.DentalDatabaseImpl$Schema();
+    Code:
+       0: aload_0
+       1: invokespecial #11                 // Method java/lang/Object."<init>":()V
+       4: return
+
+  public long getVersion();
+    Code:
+       0: lconst_1
+       1: lreturn
+
+  public java.lang.Object create-0iQ1-z0(app.cash.sqldelight.db.SqlDriver);
+    Code:
+       0: aload_1
+       1: ldc           #20                 // String driver
+       3: invokestatic  #26                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_1
+       7: aconst_null
+       8: ldc           #28                 // String CREATE TABLE AppointmentEntity (\n    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n    patientId INTEGER NOT NULL,\n    startTime INTEGER NOT NULL,\n    endTime INTEGER NOT NULL,\n    durationMinutes INTEGER NOT NULL DEFAULT 30,\n    doctorId INTEGER,\n    chairId INTEGER,\n    type TEXT NOT NULL DEFAULT \'INITIAL\',\n    status TEXT NOT NULL DEFAULT \'PLANNED\',\n    note TEXT\n)
+      10: iconst_0
+      11: aconst_null
+      12: bipush        8
+      14: aconst_null
+      15: invokestatic  #34                 // Method app/cash/sqldelight/db/SqlDriver$DefaultImpls.execute$default:(Lapp/cash/sqldelight/db/SqlDriver;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lapp/cash/sqldelight/db/QueryResult;
+      18: pop
+      19: aload_1
+      20: aconst_null
+      21: ldc           #36                 // String CREATE TABLE InvoiceEntity (\n    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n    patientId INTEGER NOT NULL,\n    title TEXT,\n    dateCreated INTEGER NOT NULL,\n    dateUpdated INTEGER NOT NULL,\n    status TEXT NOT NULL DEFAULT \'NEW\',\n    discountPercent REAL NOT NULL DEFAULT 0,\n    totalBeforeDiscount INTEGER NOT NULL DEFAULT 0,\n    discountAmount INTEGER NOT NULL DEFAULT 0,\n    totalAfterDiscount INTEGER NOT NULL DEFAULT 0\n)
+      23: iconst_0
+      24: aconst_null
+      25: bipush        8
+      27: aconst_null
+      28: invokestatic  #34                 // Method app/cash/sqldelight/db/SqlDriver$DefaultImpls.execute$default:(Lapp/cash/sqldelight/db/SqlDriver;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lapp/cash/sqldelight/db/QueryResult;
+      31: pop
+      32: aload_1
+      33: aconst_null
+      34: ldc           #38                 // String CREATE TABLE InvoiceItemEntity (\n    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n    invoiceId INTEGER NOT NULL,\n    serviceName TEXT NOT NULL,\n    serviceCode TEXT,\n    quantity INTEGER NOT NULL DEFAULT 1,\n    unitPrice INTEGER NOT NULL,\n    lineTotal INTEGER NOT NULL DEFAULT 0,\n    FOREIGN KEY (invoiceId) REFERENCES InvoiceEntity(id)\n)
+      36: iconst_0
+      37: aconst_null
+      38: bipush        8
+      40: aconst_null
+      41: invokestatic  #34                 // Method app/cash/sqldelight/db/SqlDriver$DefaultImpls.execute$default:(Lapp/cash/sqldelight/db/SqlDriver;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lapp/cash/sqldelight/db/QueryResult;
+      44: pop
+      45: aload_1
+      46: aconst_null
+      47: ldc           #40                 // String CREATE TABLE PatientEntity (\n    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n    lastName TEXT NOT NULL,\n    firstName TEXT NOT NULL,\n    middleName TEXT,\n    birthDate INTEGER,\n    phone TEXT,\n    email TEXT,\n    sex TEXT NOT NULL DEFAULT \'MALE\',\n    notes TEXT,\n    createdAt INTEGER NOT NULL,\n    updatedAt INTEGER NOT NULL\n)
+      49: iconst_0
+      50: aconst_null
+      51: bipush        8
+      53: aconst_null
+      54: invokestatic  #34                 // Method app/cash/sqldelight/db/SqlDriver$DefaultImpls.execute$default:(Lapp/cash/sqldelight/db/SqlDriver;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lapp/cash/sqldelight/db/QueryResult;
+      57: pop
+      58: aload_1
+      59: aconst_null
+      60: ldc           #42                 // String CREATE TABLE ProstheticItemEntity (\n    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n    patientId INTEGER NOT NULL,\n    toothIds TEXT NOT NULL,\n    type TEXT NOT NULL,\n    material TEXT NOT NULL,\n    stage TEXT NOT NULL,\n    createdAt INTEGER NOT NULL,\n    updatedAt INTEGER NOT NULL\n)
+      62: iconst_0
+      63: aconst_null
+      64: bipush        8
+      66: aconst_null
+      67: invokestatic  #34                 // Method app/cash/sqldelight/db/SqlDriver$DefaultImpls.execute$default:(Lapp/cash/sqldelight/db/SqlDriver;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lapp/cash/sqldelight/db/QueryResult;
+      70: pop
+      71: aload_1
+      72: aconst_null
+      73: ldc           #44                 // String CREATE TABLE ToothEntity (\n    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n    patientId INTEGER NOT NULL,\n    number INTEGER NOT NULL,\n    arch TEXT NOT NULL,\n    quadrant INTEGER NOT NULL,\n    status TEXT NOT NULL DEFAULT \'PRESENT\',\n    examType TEXT,\n    crownOption TEXT\n)
+      75: iconst_0
+      76: aconst_null
+      77: bipush        8
+      79: aconst_null
+      80: invokestatic  #34                 // Method app/cash/sqldelight/db/SqlDriver$DefaultImpls.execute$default:(Lapp/cash/sqldelight/db/SqlDriver;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lapp/cash/sqldelight/db/QueryResult;
+      83: pop
+      84: getstatic     #50                 // Field app/cash/sqldelight/db/QueryResult.Companion:Lapp/cash/sqldelight/db/QueryResult$Companion;
+      87: invokevirtual #56                 // Method app/cash/sqldelight/db/QueryResult$Companion."getUnit-mlR-ZEE":()Ljava/lang/Object;
+      90: areturn
+
+  public java.lang.Object migrate-zeHU3Mk(app.cash.sqldelight.db.SqlDriver, long, long, app.cash.sqldelight.db.AfterVersion...);
+    Code:
+       0: aload_1
+       1: ldc           #20                 // String driver
+       3: invokestatic  #26                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload         6
+       8: ldc           #61                 // String callbacks
+      10: invokestatic  #26                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      13: getstatic     #50                 // Field app/cash/sqldelight/db/QueryResult.Companion:Lapp/cash/sqldelight/db/QueryResult$Companion;
+      16: invokevirtual #56                 // Method app/cash/sqldelight/db/QueryResult$Companion."getUnit-mlR-ZEE":()Ljava/lang/Object;
+      19: areturn
+
+  public app.cash.sqldelight.db.QueryResult create(app.cash.sqldelight.db.SqlDriver);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokevirtual #69                 // Method "create-0iQ1-z0":(Lapp/cash/sqldelight/db/SqlDriver;)Ljava/lang/Object;
+       5: invokestatic  #75                 // Method app/cash/sqldelight/db/QueryResult$Value."box-impl":(Ljava/lang/Object;)Lapp/cash/sqldelight/db/QueryResult$Value;
+       8: areturn
+
+  public app.cash.sqldelight.db.QueryResult migrate(app.cash.sqldelight.db.SqlDriver, long, long, app.cash.sqldelight.db.AfterVersion[]);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: lload_2
+       3: lload         4
+       5: aload         6
+       7: invokevirtual #79                 // Method "migrate-zeHU3Mk":(Lapp/cash/sqldelight/db/SqlDriver;JJ[Lapp/cash/sqldelight/db/AfterVersion;)Ljava/lang/Object;
+      10: invokestatic  #75                 // Method app/cash/sqldelight/db/QueryResult$Value."box-impl":(Ljava/lang/Object;)Lapp/cash/sqldelight/db/QueryResult$Value;
+      13: areturn
+
+  static {};
+    Code:
+       0: new           #2                  // class com/dental/data/db/composeApp/DentalDatabaseImpl$Schema
+       3: dup
+       4: invokespecial #81                 // Method "<init>":()V
+       7: putstatic     #84                 // Field INSTANCE:Lcom/dental/data/db/composeApp/DentalDatabaseImpl$Schema;
+      10: return
+}

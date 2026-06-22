@@ -3,8 +3,8 @@ package com.dental.ui.calendar
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,22 +22,22 @@ fun CalendarScreen(viewModel: CalendarViewModel, patients: List<Patient> = empty
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Calendar") },
+                title = { Text("Календарь") },
                 navigationIcon = {
                     IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        Icon(Icons.Default.Menu, contentDescription = "Меню")
                     }
                 },
                 actions = {
                     TextButton(onClick = { viewModel.goToToday() }) {
-                        Text("Today")
+                        Text("Сегодня")
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { viewModel.showNewAppointment(null) }) {
-                Icon(Icons.Default.Add, contentDescription = "New Appointment")
+                Icon(Icons.Default.Add, contentDescription = "Новая запись")
             }
         }
     ) { padding ->
@@ -105,7 +105,7 @@ private fun CalendarHeader(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onPrevious) {
-                    Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Previous")
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Назад")
                 }
 
                 Text(
@@ -114,7 +114,7 @@ private fun CalendarHeader(
                 )
 
                 IconButton(onClick = onNext) {
-                    Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Next")
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Далее")
                 }
             }
 
@@ -128,13 +128,13 @@ private fun CalendarHeader(
                 FilterChip(
                     selected = selectedChip == 0,
                     onClick = { onViewModeChange(ViewMode.DAY) },
-                    label = { Text("Day") }
+                    label = { Text("День") }
                 )
                 Spacer(Modifier.width(8.dp))
                 FilterChip(
                     selected = selectedChip == 1,
                     onClick = { onViewModeChange(ViewMode.WEEK) },
-                    label = { Text("Week") }
+                    label = { Text("Неделя") }
                 )
             }
         }
@@ -144,11 +144,11 @@ private fun CalendarHeader(
 private fun formatHeaderDate(date: LocalDate, viewMode: ViewMode): String {
     return if (viewMode == ViewMode.DAY) {
         val months = listOf(
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
+            "Января", "Февраля", "Марта", "Апреля", "Мая", "Июня",
+            "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"
         )
         val days = listOf(
-            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+            "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"
         )
         "${days[date.dayOfWeek.ordinal]}, ${months[date.monthNumber - 1]} ${date.dayOfMonth}, ${date.year}"
     } else {

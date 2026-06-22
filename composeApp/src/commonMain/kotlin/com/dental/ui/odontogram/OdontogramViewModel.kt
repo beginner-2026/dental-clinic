@@ -1,5 +1,6 @@
 package com.dental.ui.odontogram
 
+import com.dental.data.ToothRepository
 import com.dental.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,15 +19,41 @@ data class OdontogramState(
     val bridgeFirstTooth: Int? = null,
     val bridgeSecondTooth: Int? = null,
     val undoStack: List<ProstheticItem> = emptyList(),
-    val readOnly: Boolean = false
+    val readOnly: Boolean = false,
+    val currentPatientId: Long? = null,
+    val currentPatientName: String = ""
 )
 
 enum class OdontogramViewMode { FULL_JAW, QUADRANT }
 enum class OdontogramLayer { TEETH, ORTHO, PERIO }
 
-class OdontogramViewModel {
+class OdontogramViewModel(
+    private val toothRepository: ToothRepository? = null
+) {
     private val _state = MutableStateFlow(OdontogramState())
     val state: StateFlow<OdontogramState> = _state.asStateFlow()
+
+    fun loadPatientData(patientId: Long, patientName: String) {
+        val repo = toothRepository ?: return
+        val teeth = repo.getTeethByPatientId(patientId)
+        val items = repo.getProstheticItemsByPatientId(patientId)
+        val finalTeeth = if (teeth.isEmpty()) {
+            repo.initDefaultTeeth(patientId)
+            repo.getTeethByPatientId(patientId)
+        } else {
+            teeth
+        }
+        _state.value = OdontogramState(
+            teeth = finalTeeth,
+            prostheticItems = items,
+            currentPatientId = patientId,
+            currentPatientName = patientName
+        )
+    }
+
+    fun clearPatientData() {
+        _state.value = OdontogramState()
+    }
 
     fun setTeeth(teeth: List<Tooth>) {
         _state.value = _state.value.copy(teeth = teeth)
@@ -64,9 +91,6 @@ class OdontogramViewModel {
                 val quadFirst = first / 10
                 val quadSecond = number / 10
                 if (quadFirst == quadSecond) {
-                    val start = minOf(first, number)
-                    val end = maxOf(first, number)
-                    val ids = (start..end).toList()
                     _state.value = s.copy(
                         bridgeSecondTooth = number,
                         selectedTooth = number,
@@ -97,9 +121,14 @@ class OdontogramViewModel {
         val updatedTeeth = s.teeth.map { tooth ->
             if (tooth.number == number) tooth.copy(status = status) else tooth
         }.ifEmpty {
-            listOf(Tooth(id = 0, patientId = 0, number = number, arch = OdontogramViewModel.getJawForQuadrant(number / 10), quadrant = number / 10, status = status))
+            listOf(Tooth(id = 0, patientId = s.currentPatientId ?: 0, number = number, arch = getJawForQuadrant(number / 10), quadrant = number / 10, status = status))
         }
         _state.value = s.copy(teeth = updatedTeeth)
+
+        val pid = s.currentPatientId
+        if (pid != null && toothRepository != null) {
+            toothRepository.updateToothStatus(pid, number, status)
+        }
     }
 
     fun toggleBridgeMode() {
@@ -114,6 +143,7 @@ class OdontogramViewModel {
     fun applyProsthetic(type: ProstheticType, material: ProstheticMaterial, stage: ProstheticStage) {
         val s = _state.value
         val toothNumber = s.selectedTooth ?: return
+        val pid = s.currentPatientId ?: return
 
         val toothIds = if (type == ProstheticType.BRIDGE && s.bridgeFirstTooth != null && s.bridgeSecondTooth != null) {
             val start = minOf(s.bridgeFirstTooth!!, s.bridgeSecondTooth!!)
@@ -124,26 +154,44 @@ class OdontogramViewModel {
         }
 
         val oldItems = s.prostheticItems
+
+        if (type == ProstheticType.REMOVAL) {
+            val toRemove = oldItems.filter { item ->
+                item.toothIds.any { it in toothIds }
+            }
+            toRemove.forEach { item ->
+                if (item.id != 0L) toothRepository?.deleteProstheticItem(item.id)
+            }
+            _state.value = s.copy(
+                prostheticItems = oldItems.filterNot { item ->
+                    item.toothIds.any { it in toothIds }
+                },
+                showToothMenu = false,
+                selectedTooth = null,
+                bridgeMode = false,
+                bridgeFirstTooth = null,
+                bridgeSecondTooth = null
+            )
+            return
+        }
+
         val newItem = ProstheticItem(
-            id = Clock.System.now().toEpochMilliseconds(),
-            patientId = 0L,
+            id = 0L,
+            patientId = pid,
             toothIds = toothIds,
-            type = if (type == ProstheticType.REMOVAL) ProstheticType.CROWN else type,
+            type = type,
             material = material,
-            stage = if (type == ProstheticType.REMOVAL) ProstheticStage.COMPLETED else stage,
+            stage = stage,
             createdAt = Clock.System.now().toEpochMilliseconds(),
             updatedAt = Clock.System.now().toEpochMilliseconds()
         )
 
+        val savedId = toothRepository?.saveProstheticItem(newItem) ?: 0L
+        val savedItem = newItem.copy(id = savedId)
+
         _state.value = s.copy(
-            prostheticItems = if (type == ProstheticType.REMOVAL) {
-                oldItems.filterNot { item ->
-                    item.toothIds.any { it in toothIds }
-                }
-            } else {
-                oldItems + newItem
-            },
-            undoStack = s.undoStack + newItem,
+            prostheticItems = oldItems + savedItem,
+            undoStack = s.undoStack + savedItem,
             showToothMenu = false,
             selectedTooth = null,
             bridgeMode = false,
@@ -156,8 +204,9 @@ class OdontogramViewModel {
         val s = _state.value
         if (s.undoStack.isEmpty()) return
         val last = s.undoStack.last()
+        if (last.id != 0L) toothRepository?.deleteProstheticItem(last.id)
         _state.value = s.copy(
-            prostheticItems = s.prostheticItems.filterNot { it == last },
+            prostheticItems = s.prostheticItems.filterNot { it.id == last.id && it.toothIds == last.toothIds },
             undoStack = s.undoStack.dropLast(1)
         )
     }

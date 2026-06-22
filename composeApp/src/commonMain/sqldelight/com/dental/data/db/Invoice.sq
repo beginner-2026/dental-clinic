@@ -44,3 +44,15 @@ UPDATE InvoiceEntity SET status = ?, dateUpdated = ? WHERE id = ?;
 
 deleteInvoiceItem:
 DELETE FROM InvoiceItemEntity WHERE id = ?;
+
+deleteItemsByInvoiceId:
+DELETE FROM InvoiceItemEntity WHERE invoiceId = ?;
+
+updateInvoice:
+UPDATE InvoiceEntity SET dateUpdated = ?, status = ?, discountPercent = ?, totalBeforeDiscount = ?, discountAmount = ?, totalAfterDiscount = ? WHERE id = ?;
+
+getLastInsertId:
+SELECT last_insert_rowid();
+
+deleteInvoice:
+DELETE FROM InvoiceEntity WHERE id = ?;

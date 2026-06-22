@@ -2,6 +2,7 @@ package com.dental
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,7 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.dental.data.AppointmentRepository
 import com.dental.data.DatabaseDriverFactory
+import com.dental.data.InvoiceRepository
 import com.dental.data.PatientRepository
+import com.dental.data.SeedData
+import com.dental.data.ToothRepository
 import com.dental.data.db.DentalDatabase
 import com.dental.model.*
 import com.dental.ui.calendar.CalendarScreen
@@ -18,6 +22,7 @@ import com.dental.ui.invoice.InvoiceScreen
 import com.dental.ui.navigation.AppScreen
 import com.dental.ui.odontogram.OdontogramScreen
 import com.dental.ui.odontogram.OdontogramViewModel
+import com.dental.ui.patient.PatientDetailScreen
 import com.dental.ui.patient.PatientScreen
 import com.dental.ui.theme.DentalTheme
 
@@ -25,10 +30,13 @@ import com.dental.ui.theme.DentalTheme
 fun App(driverFactory: DatabaseDriverFactory) {
     val driver = remember { driverFactory.createDriver() }
     val database = remember { DentalDatabase(driver) }
+    LaunchedEffect(Unit) { SeedData.seedIfEmpty(database) }
     val appointmentRepo = remember { AppointmentRepository(database) }
     val patientRepo = remember { PatientRepository(database) }
+    val toothRepo = remember { ToothRepository(database) }
+    val invoiceRepo = remember { InvoiceRepository(database) }
     val calendarViewModel = remember { CalendarViewModel(appointmentRepo) }
-    val odontogramViewModel = remember { OdontogramViewModel() }
+    val odontogramViewModel = remember { OdontogramViewModel(toothRepo) }
 
     var currentScreen by remember { mutableStateOf(AppScreen.CALENDAR) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -37,6 +45,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
     val patients = remember(reloadKey) { patientRepo.getAll() }
     var drawerOpen by remember { mutableStateOf(false) }
 
+    var selectedPatient by remember { mutableStateOf<Patient?>(null) }
     var showAddPatientDialog by remember { mutableStateOf(false) }
     var newPatientLastName by remember { mutableStateOf("") }
     var newPatientFirstName by remember { mutableStateOf("") }
@@ -55,7 +64,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
                 ModalDrawerSheet {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Dental Clinic",
+                        text = "Стоматологическая клиника",
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.padding(16.dp)
                     )
@@ -63,7 +72,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                        label = { Text("Calendar") },
+                        label = { Text("Календарь") },
                         selected = currentScreen == AppScreen.CALENDAR,
                         onClick = {
                             currentScreen = AppScreen.CALENDAR
@@ -73,7 +82,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     )
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Person, contentDescription = null) },
-                        label = { Text("Patients") },
+                        label = { Text("Пациенты") },
                         selected = currentScreen == AppScreen.PATIENTS,
                         onClick = {
                             currentScreen = AppScreen.PATIENTS
@@ -82,7 +91,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     )
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
-                        label = { Text("Odontogram") },
+                        label = { Text("Зубная формула") },
                         selected = currentScreen == AppScreen.ODONTOGRAM,
                         onClick = {
                             currentScreen = AppScreen.ODONTOGRAM
@@ -90,8 +99,8 @@ fun App(driverFactory: DatabaseDriverFactory) {
                         }
                     )
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.List, contentDescription = null) },
-                        label = { Text("Invoice") },
+                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
+                        label = { Text("Счёт") },
                         selected = currentScreen == AppScreen.INVOICE,
                         onClick = {
                             currentScreen = AppScreen.INVOICE
@@ -109,18 +118,35 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     )
                     AppScreen.PATIENTS -> PatientScreen(
                         patients = patients,
-                        onPatientClick = {},
+                        onPatientClick = { patient ->
+                            selectedPatient = patient
+                            odontogramViewModel.setTeeth(emptyList())
+                            currentScreen = AppScreen.PATIENT_DETAIL
+                        },
                         onAddPatient = { showAddPatientDialog = true },
                         onMenuClick = { drawerOpen = !drawerOpen }
                     )
+                    AppScreen.PATIENT_DETAIL -> selectedPatient?.let { patient ->
+                        PatientDetailScreen(
+                            patient = patient,
+                            odontogramViewModel = odontogramViewModel,
+                            invoiceRepository = invoiceRepo,
+                            onBack = {
+                                currentScreen = AppScreen.PATIENTS
+                                odontogramViewModel.clearPatientData()
+                                reloadKey++
+                            }
+                        )
+                    }
                     AppScreen.ODONTOGRAM -> OdontogramScreen(
                         viewModel = odontogramViewModel,
                         onMenuClick = { drawerOpen = !drawerOpen }
                     )
                     AppScreen.INVOICE -> InvoiceScreen(
                         invoiceParam = null,
+                        patients = patients,
                         onSave = {},
-                        onAddItem = {},
+    
                         onMenuClick = { drawerOpen = !drawerOpen }
                     )
                 }
@@ -131,13 +157,13 @@ fun App(driverFactory: DatabaseDriverFactory) {
     if (showAddPatientDialog) {
         AlertDialog(
             onDismissRequest = { showAddPatientDialog = false },
-            title = { Text("Add Patient") },
+            title = { Text("Добавить пациента") },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = newPatientLastName,
                         onValueChange = { newPatientLastName = it },
-                        label = { Text("Last name *") },
+                        label = { Text("Фамилия *") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -145,7 +171,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     OutlinedTextField(
                         value = newPatientFirstName,
                         onValueChange = { newPatientFirstName = it },
-                        label = { Text("First name *") },
+                        label = { Text("Имя *") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -153,7 +179,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     OutlinedTextField(
                         value = newPatientMiddleName,
                         onValueChange = { newPatientMiddleName = it },
-                        label = { Text("Middle name") },
+                        label = { Text("Отчество") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -161,7 +187,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     OutlinedTextField(
                         value = newPatientPhone,
                         onValueChange = { newPatientPhone = it },
-                        label = { Text("Phone") },
+                        label = { Text("Телефон") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -188,10 +214,10 @@ fun App(driverFactory: DatabaseDriverFactory) {
                         }
                     },
                     enabled = newPatientLastName.isNotBlank() && newPatientFirstName.isNotBlank()
-                ) { Text("Save") }
+                ) { Text("Сохранить") }
             },
             dismissButton = {
-                TextButton(onClick = { showAddPatientDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showAddPatientDialog = false }) { Text("Отмена") }
             }
         )
     }

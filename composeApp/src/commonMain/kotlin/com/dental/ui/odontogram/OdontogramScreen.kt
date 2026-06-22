@@ -4,6 +4,8 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,7 +37,7 @@ fun OdontogramScreen(
     val state by viewModel.state.collectAsState()
     var showLegend by remember { mutableStateOf(false) }
     var activeTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Overview", "Quickselect", "Periodontal Probing")
+    val tabs = listOf("Обзор", "Быстрый выбор", "Пародонтальное зондирование")
 
     Row(modifier = Modifier.fillMaxSize().background(ContentBg)) {
         // Left Nav Panel
@@ -58,20 +60,20 @@ fun OdontogramScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color(0xFF212121))
+                        Icon(Icons.Default.Menu, contentDescription = "Меню", tint = Color(0xFF212121))
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("John Derec", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF212121))
-                        Text("DOB: 12.05.1987", fontSize = 11.sp, color = Color(0xFF757575))
+                        val name = state.currentPatientName.ifBlank { "Выберите пациента" }
+                        Text(name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF212121))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { showLegend = true }) {
-                            Icon(Icons.Default.Info, contentDescription = "Legend", tint = Color(0xFF616161))
+                            Icon(Icons.Default.Info, contentDescription = "Легенда", tint = Color(0xFF616161))
                         }
                         IconButton(onClick = { viewModel.toggleReadOnly() }) {
                             Icon(
                                 Icons.Default.Lock,
-                                contentDescription = if (state.readOnly) "Read only" else "Edit mode",
+                                contentDescription = if (state.readOnly) "Только чтение" else "Режим редактирования",
                                 tint = if (state.readOnly) Color(0xFFBDBDBD) else Color(0xFF1565C0)
                             )
                         }
@@ -120,14 +122,14 @@ fun OdontogramScreen(
                     FilterChip(
                         selected = state.viewMode == OdontogramViewMode.FULL_JAW,
                         onClick = { viewModel.setViewMode(OdontogramViewMode.FULL_JAW) },
-                        label = { Text("Full", fontSize = 11.sp) },
+                        label = { Text("Полный", fontSize = 11.sp) },
                         leadingIcon = { Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp)) }
                     )
                     Spacer(Modifier.width(4.dp))
                     FilterChip(
                         selected = state.viewMode == OdontogramViewMode.QUADRANT,
                         onClick = { viewModel.setViewMode(OdontogramViewMode.QUADRANT) },
-                        label = { Text("Quadrant", fontSize = 11.sp) },
+                        label = { Text("Квадрант", fontSize = 11.sp) },
                         leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp)) }
                     )
                 }
@@ -139,10 +141,10 @@ fun OdontogramScreen(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Bridge: tap abutments", fontSize = 10.sp)
+                            Text("Мост: выберите опоры", fontSize = 10.sp)
                             Spacer(Modifier.width(4.dp))
                             TextButton(onClick = { viewModel.toggleBridgeMode() }, contentPadding = PaddingValues(4.dp)) {
-                                Text("Cancel", fontSize = 10.sp)
+                                Text("Отмена", fontSize = 10.sp)
                             }
                         }
                     }
@@ -151,7 +153,15 @@ fun OdontogramScreen(
 
             // 4-Layer Odontogram Canvas (main content)
             Box(modifier = Modifier.weight(1f)) {
-                if (state.viewMode == OdontogramViewMode.FULL_JAW) {
+                if (state.currentPatientId == null) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color(0xFFBDBDBD))
+                            Spacer(Modifier.height(8.dp))
+                            Text("Выберите пациента из списка", color = Color(0xFF9E9E9E), fontSize = 14.sp)
+                        }
+                    }
+                } else if (state.viewMode == OdontogramViewMode.FULL_JAW) {
                     OdontogramLayers(
                         teeth = state.teeth,
                         prostheticItems = state.prostheticItems,
@@ -197,7 +207,7 @@ fun OdontogramScreen(
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     SmallFloatingActionButton(onClick = { viewModel.undo() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Undo")
+                        Icon(Icons.Default.Refresh, contentDescription = "Отменить")
                     }
                 }
             }
@@ -243,21 +253,21 @@ private fun LeftNavPanel(
         // Nav items
         NavItem(
             icon = { ToothNavIcon() },
-            label = "Endo",
+            label = "Эндо",
             isActive = activeTab == 0,
             onClick = { onTabChange(0) }
         )
         Spacer(Modifier.height(24.dp))
         NavItem(
             icon = { GumNavIcon() },
-            label = "Perio",
+            label = "Перио",
             isActive = activeTab == 1,
             onClick = { onTabChange(1) }
         )
         Spacer(Modifier.height(24.dp))
         NavItem(
             icon = { ToothOutlineNavIcon() },
-            label = "Dental",
+            label = "Вид",
             isActive = activeTab == 2,
             onClick = { onTabChange(2) }
         )
@@ -303,8 +313,8 @@ private fun ToothNavIcon() {
         val path = Path().apply {
             moveTo(cx - 6f, cy + 4f)
             lineTo(cx - 6f, cy - 4f)
-            quadraticBezierTo(cx - 4f, cy - 8f, cx, cy - 6f)
-            quadraticBezierTo(cx + 4f, cy - 8f, cx + 6f, cy - 4f)
+            quadraticTo(cx - 4f, cy - 8f, cx, cy - 6f)
+            quadraticTo(cx + 4f, cy - 8f, cx + 6f, cy - 4f)
             lineTo(cx + 6f, cy + 4f)
             close()
         }
@@ -338,8 +348,8 @@ private fun ToothOutlineNavIcon() {
         val path = Path().apply {
             moveTo(cx - 7f, cy + 3f)
             lineTo(cx - 7f, cy - 4f)
-            quadraticBezierTo(cx - 4f, cy - 8f, cx, cy - 7f)
-            quadraticBezierTo(cx + 4f, cy - 8f, cx + 7f, cy - 4f)
+            quadraticTo(cx - 4f, cy - 8f, cx, cy - 7f)
+            quadraticTo(cx + 4f, cy - 8f, cx + 7f, cy - 4f)
             lineTo(cx + 7f, cy + 3f)
             close()
         }
@@ -360,14 +370,14 @@ private fun QuadrantView(
     onToothClick: (Int) -> Unit
 ) {
     val toothNumbers = OdontogramViewModel.getQuadrantToothNumbers(quadrant)
-    val jawLabel = if (quadrant <= 2) "Upper" else "Lower"
+    val jawLabel = if (quadrant <= 2) "Верхняя" else "Нижняя"
 
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Quadrant $quadrant ($jawLabel)",
+            text = "Квадрант $quadrant ($jawLabel)",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -397,7 +407,7 @@ private fun QuadrantView(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Procedure", fontSize = 12.sp)
+                    Text("Процедура", fontSize = 12.sp)
                 }
                 OutlinedButton(
                     onClick = {},
@@ -406,7 +416,7 @@ private fun QuadrantView(
                 ) {
                     Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("History", fontSize = 12.sp)
+                    Text("История", fontSize = 12.sp)
                 }
             }
         }
@@ -427,10 +437,10 @@ private fun QuadrantNavBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onSwipeRight) {
-                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Previous")
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Назад")
             }
             (1..4).forEach { q ->
-                val label = when (q) { 1 -> "Q1"; 2 -> "Q2"; 3 -> "Q3"; else -> "Q4" }
+                val label = when (q) { 1 -> "К1"; 2 -> "К2"; 3 -> "К3"; else -> "К4" }
                 FilterChip(
                     selected = currentQuadrant == q,
                     onClick = { onSelect(q) },
@@ -439,7 +449,7 @@ private fun QuadrantNavBar(
                 )
             }
             IconButton(onClick = onSwipeLeft) {
-                Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Next")
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Далее")
             }
         }
     }
@@ -449,23 +459,23 @@ private fun QuadrantNavBar(
 private fun LegendDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Legend") },
+        title = { Text("Легенда") },
         text = {
             Column {
-                Text("Color scheme:", fontWeight = FontWeight.Bold)
-                LegendRow(Color(0xFFFFFFFF), "Healthy tooth")
-                LegendRow(Color(0xFF9C27B0), "Filling / Caries / Perio problem")
-                LegendRow(Color(0xFF607D8B), "Crown / Metal-ceramic / Implant")
-                LegendRow(Color(0xFFFFEB3B), "Endodontic treatment")
-                LegendRow(Color(0xFFE53935), "Gum margin / Pocket marker")
-                LegendRow(Color(0xFFD7CCC8), "Bone tissue")
-                LegendRow(Color(0xFF757575), "Implant (titanium)")
+                Text("Цветовая схема:", fontWeight = FontWeight.Bold)
+                LegendRow(Color(0xFFFFFFFF), "Здоровый зуб")
+                LegendRow(Color(0xFF9C27B0), "Пломба / Кариес / Проблема с десной")
+                LegendRow(Color(0xFF607D8B), "Коронка / Металлокерамика / Имплант")
+                LegendRow(Color(0xFFFFEB3B), "Эндодонтическое лечение")
+                LegendRow(Color(0xFFE53935), "Линия десны / Карман")
+                LegendRow(Color(0xFFD7CCC8), "Костная ткань")
+                LegendRow(Color(0xFF757575), "Имплант (титан)")
                 Spacer(Modifier.height(8.dp))
-                Text("Layers:", fontWeight = FontWeight.Bold)
-                Text("- Anatomical: cross-section with roots & bone")
-                Text("- Crowns: top-down view of restoration type")
-                Text("- Restorations: oval map of fillings/problems")
-                Text("- Contour: schematic outline / implant abutments")
+                Text("Слои:", fontWeight = FontWeight.Bold)
+                Text("- Анатомический: поперечное сечение с корнями и костью")
+                Text("- Коронки: вид сверху на тип реставрации")
+                Text("- Реставрации: овальная карта пломб/проблем")
+                Text("- Контур: схематичный контур / абатменты импланта")
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }

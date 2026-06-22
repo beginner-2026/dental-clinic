@@ -42,23 +42,17 @@ fun AppointmentDialog(
         }
     }
 
-    // Auto-select patient when only one match or name fully matches
     LaunchedEffect(searchQuery, filteredPatients) {
-        if (searchQuery.isNotBlank() && selectedPatient == null) {
-            val exact = filteredPatients.singleOrNull {
-                "${it.lastName} ${it.firstName}".equals(searchQuery, ignoreCase = true)
-            }
-            if (exact != null) {
-                selectedPatient = exact
-                searchQuery = "${exact.lastName} ${exact.firstName}"
-                showDropdown = false
-            }
+        if (searchQuery.isNotBlank() && selectedPatient == null && filteredPatients.size == 1) {
+            selectedPatient = filteredPatients[0]
+            searchQuery = "${filteredPatients[0].lastName} ${filteredPatients[0].firstName}"
+            showDropdown = false
         }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (isEdit) "Edit Appointment" else "New Appointment") },
+        title = { Text(if (isEdit) "Редактировать запись" else "Новая запись") },
         text = {
             Column(
                 modifier = Modifier
@@ -67,7 +61,7 @@ fun AppointmentDialog(
             ) {
                 if (startLocal != null) {
                     Text(
-                        text = "Time: %02d:%02d".format(startLocal.hour, startLocal.minute),
+                        text = "Время: %02d:%02d".format(startLocal.hour, startLocal.minute),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -75,7 +69,7 @@ fun AppointmentDialog(
                 }
 
                 // Patient search
-                Text("Patient:", style = MaterialTheme.typography.bodyMedium)
+                Text("Пациент:", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
                 OutlinedTextField(
                     value = selectedPatient?.let { "${it.lastName} ${it.firstName}" } ?: searchQuery,
@@ -84,7 +78,7 @@ fun AppointmentDialog(
                         selectedPatient = null
                         showDropdown = it.isNotEmpty()
                     },
-                    label = { Text("Search patient") },
+                    label = { Text("Поиск пациента") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = !isEdit
@@ -118,7 +112,7 @@ fun AppointmentDialog(
 
                 // Duration
                 Text(
-                    text = "Duration: ${durationMinutes}min",
+                    text = "Длительность: ${durationMinutes}мин",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Slider(
@@ -131,7 +125,7 @@ fun AppointmentDialog(
                 Spacer(Modifier.height(8.dp))
 
                 // Type selector
-                Text("Type:", style = MaterialTheme.typography.bodyMedium)
+                Text("Тип:", style = MaterialTheme.typography.bodyMedium)
                 Row {
                     AppointmentType.entries.forEach { t ->
                         FilterChip(
@@ -146,7 +140,7 @@ fun AppointmentDialog(
                 Spacer(Modifier.height(8.dp))
 
                 // Status selector
-                Text("Status:", style = MaterialTheme.typography.bodyMedium)
+                Text("Статус:", style = MaterialTheme.typography.bodyMedium)
                 Row {
                     AppointmentStatus.entries.forEach { s ->
                         FilterChip(
@@ -163,7 +157,7 @@ fun AppointmentDialog(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("Note") },
+                    label = { Text("Заметка") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2
                 )
@@ -189,7 +183,7 @@ fun AppointmentDialog(
                 },
                 enabled = selectedPatient != null
             ) {
-                Text("Save")
+                Text("Сохранить")
             }
         },
         dismissButton = {
@@ -201,11 +195,11 @@ fun AppointmentDialog(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Delete")
+                        Text("Удалить")
                     }
                 }
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text("Отмена")
                 }
             }
         }

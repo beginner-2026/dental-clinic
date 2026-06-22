@@ -1,0 +1,36 @@
+@echo off
+setlocal enabledelayedexpansion
+
+echo ============================================
+echo   DentalClinic - Стоматологическая клиника
+echo ============================================
+echo.
+
+where java >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [ОШИБКА] Java 17+ не найдена.
+    pause
+    exit /b 1
+)
+
+if not exist "%~dp0gradlew.bat" (
+    echo [ОШИБКА] gradlew.bat не найден.
+    pause
+    exit /b 1
+)
+
+echo [ЗАПУСК] Сборка и запуск Desktop-версии...
+echo.
+
+call "%~dp0gradlew.bat" :composeApp:run
+
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ОШИБКА] Сборка не удалась.
+    pause
+    exit /b %ERRORLEVEL%
+)
+
+echo.
+echo [ГОТОВО] Приложение закрыто.
+pause
