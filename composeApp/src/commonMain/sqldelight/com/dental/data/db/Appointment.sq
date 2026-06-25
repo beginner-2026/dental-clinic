@@ -33,3 +33,8 @@ UPDATE AppointmentEntity SET status = ? WHERE id = ?;
 
 deleteById:
 DELETE FROM AppointmentEntity WHERE id = ?;
+
+getLastVisitPerPatient:
+SELECT patientId, MAX(startTime) AS lastVisit
+FROM AppointmentEntity
+GROUP BY patientId;

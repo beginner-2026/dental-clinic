@@ -13,6 +13,28 @@ enum class Arch { UPPER, LOWER }
 
 enum class ToothStatus { PRESENT, MISSING, IMPLANT }
 
+enum class ToothType {
+    UPPER_MOLAR,
+    LOWER_MOLAR,
+    UPPER_PREMOLAR,
+    LOWER_PREMOLAR,
+    UPPER_ANTERIOR,
+    LOWER_ANTERIOR,
+    OTHER
+}
+
+fun getToothType(number: Int): ToothType {
+    return when (number) {
+        18, 17, 16, 26, 27, 28 -> ToothType.UPPER_MOLAR
+        48, 47, 46, 36, 37, 38 -> ToothType.LOWER_MOLAR
+        15, 14, 25, 24 -> ToothType.UPPER_PREMOLAR
+        45, 44, 35, 34 -> ToothType.LOWER_PREMOLAR
+        13, 12, 11, 21, 22, 23 -> ToothType.UPPER_ANTERIOR
+        43, 42, 41, 31, 32, 33 -> ToothType.LOWER_ANTERIOR
+        else -> ToothType.OTHER
+    }
+}
+
 data class ProstheticItem(
     val id: Long = 0,
     val patientId: Long,

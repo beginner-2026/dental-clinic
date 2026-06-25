@@ -5,6 +5,14 @@
 
 ## Сборка / запуск
 
+- **Desktop портативная** (папка с JRE): `gradlew :composeApp:createDistributable`
+- **Desktop EXE-установщик**: `gradlew :composeApp:packageExe`
+- **Desktop толстый JAR**: `gradlew :composeApp:packageUberJarForCurrentOS`
+- **Android APK**: `gradlew :composeApp:assembleDebug` / `assembleRelease`
+- **Проверка компиляции (быстро)**: `./gradlew :composeApp:compileKotlinDesktop` — завершается сразу без открытия окна
+- **Запуск desktop в фоне** (не блокирует терминал): `Start-Process -FilePath ".\gradlew" -ArgumentList ":composeApp:run"` — окно живёт отдельно, закрывается крестиком
+- **Результат всех сборок копировать в `Builds/`** (создать, если нет)
+
 ## Архитектура
 
 - **Single module** (`:composeApp`), три source set: `commonMain`, `androidMain`, `desktopMain`

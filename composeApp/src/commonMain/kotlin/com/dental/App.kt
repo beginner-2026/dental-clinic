@@ -2,8 +2,8 @@ package com.dental
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -16,50 +16,46 @@ import com.dental.data.SeedData
 import com.dental.data.ToothRepository
 import com.dental.data.db.DentalDatabase
 import com.dental.model.*
-import com.dental.ui.calendar.CalendarScreen
-import com.dental.ui.calendar.CalendarViewModel
-import com.dental.ui.invoice.InvoiceScreen
 import com.dental.ui.navigation.AppScreen
-import com.dental.ui.odontogram.OdontogramScreen
 import com.dental.ui.odontogram.OdontogramViewModel
 import com.dental.ui.patient.PatientDetailScreen
 import com.dental.ui.patient.PatientScreen
+import com.dental.ui.pricelist.PriceListScreen
 import com.dental.ui.theme.DentalTheme
 
 @Composable
 fun App(driverFactory: DatabaseDriverFactory) {
     val driver = remember { driverFactory.createDriver() }
     val database = remember { DentalDatabase(driver) }
-    LaunchedEffect(Unit) { SeedData.seedIfEmpty(database) }
     val appointmentRepo = remember { AppointmentRepository(database) }
     val patientRepo = remember { PatientRepository(database) }
     val toothRepo = remember { ToothRepository(database) }
     val invoiceRepo = remember { InvoiceRepository(database) }
-    val calendarViewModel = remember { CalendarViewModel(appointmentRepo) }
-    val odontogramViewModel = remember { OdontogramViewModel(toothRepo) }
 
-    var currentScreen by remember { mutableStateOf(AppScreen.CALENDAR) }
+    var currentScreen by remember { mutableStateOf(AppScreen.PATIENTS) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     var reloadKey by remember { mutableStateOf(0) }
+    fun reloadPatients() { reloadKey++ }
     val patients = remember(reloadKey) { patientRepo.getAll() }
-    var drawerOpen by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        SeedData.seedIfEmpty(database)
+        reloadPatients()
+    }
 
     var selectedPatient by remember { mutableStateOf<Patient?>(null) }
+    val odontogramViewModel = remember { OdontogramViewModel(toothRepo) }
+
     var showAddPatientDialog by remember { mutableStateOf(false) }
     var newPatientLastName by remember { mutableStateOf("") }
     var newPatientFirstName by remember { mutableStateOf("") }
     var newPatientMiddleName by remember { mutableStateOf("") }
     var newPatientPhone by remember { mutableStateOf("") }
 
-    LaunchedEffect(drawerOpen) {
-        if (drawerOpen) drawerState.open() else drawerState.close()
-    }
-
     DentalTheme {
         ModalNavigationDrawer(
             drawerState = drawerState,
-            gesturesEnabled = drawerState.isOpen,
             drawerContent = {
                 ModalDrawerSheet {
                     Spacer(Modifier.height(8.dp))
@@ -71,92 +67,60 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     HorizontalDivider()
 
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                        label = { Text("Календарь") },
-                        selected = currentScreen == AppScreen.CALENDAR,
-                        onClick = {
-                            currentScreen = AppScreen.CALENDAR
-                            calendarViewModel.loadAppointments()
-                            drawerOpen = false
-                        }
-                    )
-                    NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Person, contentDescription = null) },
                         label = { Text("Пациенты") },
                         selected = currentScreen == AppScreen.PATIENTS,
                         onClick = {
                             currentScreen = AppScreen.PATIENTS
-                            drawerOpen = false
+                            reloadPatients()
                         }
                     )
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
-                        label = { Text("Зубная формула") },
-                        selected = currentScreen == AppScreen.ODONTOGRAM,
+                        icon = { Icon(Icons.Default.MonetizationOn, contentDescription = null) },
+                        label = { Text("Прейскурант") },
+                        selected = currentScreen == AppScreen.PRICE_LIST,
                         onClick = {
-                            currentScreen = AppScreen.ODONTOGRAM
-                            drawerOpen = false
-                        }
-                    )
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
-                        label = { Text("Счёт") },
-                        selected = currentScreen == AppScreen.INVOICE,
-                        onClick = {
-                            currentScreen = AppScreen.INVOICE
-                            drawerOpen = false
+                            currentScreen = AppScreen.PRICE_LIST
                         }
                     )
                 }
             }
         ) {
+            val currentPatient = selectedPatient
+            if (currentPatient != null) {
+                PatientDetailScreen(
+                    patient = currentPatient,
+                    odontogramViewModel = odontogramViewModel,
+                    invoiceRepository = invoiceRepo,
+                    onBack = { selectedPatient = null }
+                )
+            } else {
                 when (currentScreen) {
-                    AppScreen.CALENDAR -> CalendarScreen(
-                        viewModel = calendarViewModel,
-                        patients = patients,
-                        onMenuClick = { drawerOpen = !drawerOpen }
-                    )
                     AppScreen.PATIENTS -> PatientScreen(
                         patients = patients,
-                        onPatientClick = { patient ->
-                            selectedPatient = patient
-                            odontogramViewModel.setTeeth(emptyList())
-                            currentScreen = AppScreen.PATIENT_DETAIL
-                        },
                         onAddPatient = { showAddPatientDialog = true },
-                        onMenuClick = { drawerOpen = !drawerOpen }
+                        onDeletePatient = { id ->
+                            patientRepo.delete(id)
+                            reloadPatients()
+                        },
+                        onReload = { reloadPatients() },
+                        onPatientClick = { selectedPatient = it }
                     )
-                    AppScreen.PATIENT_DETAIL -> selectedPatient?.let { patient ->
-                        PatientDetailScreen(
-                            patient = patient,
-                            odontogramViewModel = odontogramViewModel,
-                            invoiceRepository = invoiceRepo,
-                            onBack = {
-                                currentScreen = AppScreen.PATIENTS
-                                odontogramViewModel.clearPatientData()
-                                reloadKey++
-                            }
-                        )
-                    }
-                    AppScreen.ODONTOGRAM -> OdontogramScreen(
-                        viewModel = odontogramViewModel,
-                        onMenuClick = { drawerOpen = !drawerOpen }
-                    )
-                    AppScreen.INVOICE -> InvoiceScreen(
-                        invoiceParam = null,
-                        patients = patients,
-                        onSave = {},
-    
-                        onMenuClick = { drawerOpen = !drawerOpen }
-                    )
+                    AppScreen.PRICE_LIST -> PriceListScreen()
                 }
+            }
         }
     }
 
-    // Add Patient Dialog
     if (showAddPatientDialog) {
         AlertDialog(
-            onDismissRequest = { showAddPatientDialog = false },
+            onDismissRequest = {
+                showAddPatientDialog = false
+                newPatientLastName = ""
+                newPatientFirstName = ""
+                newPatientMiddleName = ""
+                newPatientPhone = ""
+            },
             title = { Text("Добавить пациента") },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -209,7 +173,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
                             newPatientFirstName = ""
                             newPatientMiddleName = ""
                             newPatientPhone = ""
-                            reloadKey++
+                            reloadPatients()
                             showAddPatientDialog = false
                         }
                     },
@@ -217,7 +181,13 @@ fun App(driverFactory: DatabaseDriverFactory) {
                 ) { Text("Сохранить") }
             },
             dismissButton = {
-                TextButton(onClick = { showAddPatientDialog = false }) { Text("Отмена") }
+                TextButton(onClick = {
+                    showAddPatientDialog = false
+                    newPatientLastName = ""
+                    newPatientFirstName = ""
+                    newPatientMiddleName = ""
+                    newPatientPhone = ""
+                }) { Text("Отмена") }
             }
         )
     }

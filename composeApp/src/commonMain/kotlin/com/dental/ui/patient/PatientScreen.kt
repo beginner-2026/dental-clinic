@@ -6,11 +6,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dental.model.Patient
 
@@ -18,22 +21,17 @@ import com.dental.model.Patient
 @Composable
 fun PatientScreen(
     patients: List<Patient>,
-    onPatientClick: (Patient) -> Unit,
     onAddPatient: () -> Unit,
-    onMenuClick: () -> Unit = {}
+    onDeletePatient: (Long) -> Unit,
+    onReload: () -> Unit,
+    onPatientClick: (Patient) -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var showDeleteConfirm by remember { mutableStateOf<Patient?>(null) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Пациенты") },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Меню")
-                    }
-                }
-            )
+            TopAppBar(title = { Text("Пациенты") })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddPatient) {
@@ -46,7 +44,6 @@ fun PatientScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Search
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -54,52 +51,89 @@ fun PatientScreen(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                singleLine = true
             )
 
-            val filteredPatients = (if (searchQuery.isBlank()) patients
+            val filteredPatients = if (searchQuery.isBlank()) patients
             else patients.filter {
                 it.lastName.contains(searchQuery, ignoreCase = true) ||
                 it.firstName.contains(searchQuery, ignoreCase = true) ||
+                it.middleName?.contains(searchQuery, ignoreCase = true) == true ||
                 it.phone?.contains(searchQuery) == true
-            }).sortedBy { "${it.lastName} ${it.firstName}" }
+            }
 
             LazyColumn {
-                items(filteredPatients) { patient ->
+                items(filteredPatients, key = { it.id }) { patient ->
                     PatientCard(
                         patient = patient,
+                        onDelete = { showDeleteConfirm = patient },
                         onClick = { onPatientClick(patient) }
                     )
                 }
             }
         }
     }
+
+    showDeleteConfirm?.let { patient ->
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = null },
+            title = { Text("Удалить пациента") },
+            text = {
+                Text("Вы уверены, что хотите удалить ${patient.lastName} ${patient.firstName}? Все данные пациента будут удалены.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeletePatient(patient.id)
+                        showDeleteConfirm = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                ) { Text("Удалить") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = null }) { Text("Отмена") }
+            }
+        )
+    }
 }
 
 @Composable
-private fun PatientCard(patient: Patient, onClick: () -> Unit) {
+private fun PatientCard(patient: Patient, onDelete: () -> Unit, onClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clickable(onClick = onClick)
+            .clickable { onClick() }
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${patient.lastName} ${patient.firstName}",
-                    style = MaterialTheme.typography.bodyLarge
+                    text = buildString {
+                        append(patient.lastName)
+                        append(" ")
+                        append(patient.firstName)
+                        if (!patient.middleName.isNullOrBlank()) {
+                            append(" ")
+                            append(patient.middleName)
+                        }
+                    },
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
                 )
-                if (patient.phone != null) {
-                    Text(
-                        text = patient.phone,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+
+            }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Удалить",
+                    tint = Color(0xFFE53935)
+                )
             }
         }
     }

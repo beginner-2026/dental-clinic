@@ -29,3 +29,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 getLastInsertId:
 SELECT last_insert_rowid();
+
+deleteById:
+DELETE FROM PatientEntity WHERE id = ?;

@@ -6,7 +6,7 @@ import com.dental.model.Patient
 import com.dental.model.Sex
 import kotlinx.datetime.Clock
 
-class PatientRepository(db: DentalDatabase) {
+class PatientRepository(private val db: DentalDatabase) {
 
     private val queries = db.patientQueries
 
@@ -20,6 +20,17 @@ class PatientRepository(db: DentalDatabase) {
 
     fun search(query: String): List<Patient> {
         return queries.search(query, query, query).executeAsList().map { it.toPatient() }
+    }
+
+    fun delete(id: Long) {
+        queries.deleteById(id)
+    }
+
+    fun getAllSortedByLastVisit(): List<Patient> {
+        val allPatients = getAll()
+        val lastVisitByPatient = db.appointmentQueries.getLastVisitPerPatient().executeAsList()
+            .associate { it.patientId to it.lastVisit }
+        return allPatients.sortedByDescending { lastVisitByPatient[it.id] ?: 0L }
     }
 
     fun create(patient: Patient): Long {

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.dental.model.*
 
@@ -34,12 +35,14 @@ private val BoneBeige = Color(0xFFD7CCC8)
 private val ImplantGray = Color(0xFF757575)
 private val DarkBlue = Color(0xFF1565C0)
 private val OutlineGray = Color(0xFFBDBDBD)
+private val DarkOutline = Color(0xFF555555)
 private val PurpleFilling = Color(0xFFCE93D8)
 private val PerioRed = Color(0xFFEF5350)
 private val RootColor = Color(0xFFE8DCC8)
 private val MissingGray = Color(0xFFE0E0E0)
 private val DividerLineColor = Color(0xFF90A4AE).copy(alpha = 0.45f)
 private val ShadowColor = Color(0xFF000000).copy(alpha = 0.06f)
+private val CanalColor = Color(0xFF8D6E63).copy(alpha = 0.75f)
 
 internal enum class LayerType { ANATOMICAL, CROWNS, RESTORATIONS, CONTOUR }
 
@@ -60,141 +63,71 @@ fun OdontogramLayers(
             .verticalScroll(rememberScrollState())
             .padding(vertical = 4.dp)
     ) {
-        Text(
-            text = "Анатомический",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 8.dp, bottom = 2.dp)
+        ToothNumbering(
+            toothNumbers = upperTeeth,
+            modifier = Modifier.fillMaxWidth()
         )
-        ToothLayer(
+
+        ArchCanvas(
             teeth = teeth,
             prostheticItems = prostheticItems,
             selectedTooth = selectedTooth,
             layerType = LayerType.ANATOMICAL,
-            upperTeeth = upperTeeth,
-            lowerTeeth = lowerTeeth,
+            toothNumbers = upperTeeth,
             onToothClick = onToothClick,
-            modifier = Modifier.fillMaxWidth().height(120.dp)
+            modifier = Modifier.fillMaxWidth().height(80.dp)
         )
 
-        Text(
-            text = "Коронки",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 2.dp)
-        )
-        ToothLayer(
+        Spacer(Modifier.height(16.dp))
+
+        ArchCanvas(
             teeth = teeth,
             prostheticItems = prostheticItems,
             selectedTooth = selectedTooth,
-            layerType = LayerType.CROWNS,
-            upperTeeth = upperTeeth,
-            lowerTeeth = lowerTeeth,
+            layerType = LayerType.ANATOMICAL,
+            toothNumbers = lowerTeeth,
             onToothClick = onToothClick,
-            modifier = Modifier.fillMaxWidth().height(56.dp)
-        )
-
-        Text(
-            text = "Реставрации",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 2.dp)
-        )
-        ToothLayer(
-            teeth = teeth,
-            prostheticItems = prostheticItems,
-            selectedTooth = selectedTooth,
-            layerType = LayerType.RESTORATIONS,
-            upperTeeth = upperTeeth,
-            lowerTeeth = lowerTeeth,
-            onToothClick = onToothClick,
-            modifier = Modifier.fillMaxWidth().height(48.dp)
-        )
-
-        Text(
-            text = "Контур",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 2.dp)
-        )
-        ToothLayer(
-            teeth = teeth,
-            prostheticItems = prostheticItems,
-            selectedTooth = selectedTooth,
-            layerType = LayerType.CONTOUR,
-            upperTeeth = upperTeeth,
-            lowerTeeth = lowerTeeth,
-            onToothClick = onToothClick,
-            modifier = Modifier.fillMaxWidth().height(40.dp)
+            modifier = Modifier.fillMaxWidth().height(80.dp)
         )
 
         ToothNumbering(
-            upperTeeth = upperTeeth,
-            lowerTeeth = lowerTeeth,
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+            toothNumbers = lowerTeeth,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
 
 @Composable
-private fun ToothLayer(
+internal fun ArchCanvas(
     teeth: List<Tooth>,
     prostheticItems: List<ProstheticItem>,
     selectedTooth: Int?,
     layerType: LayerType,
-    upperTeeth: List<Int>,
-    lowerTeeth: List<Int>,
+    toothNumbers: List<Int>,
     onToothClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Canvas(
-        modifier = modifier.pointerInput(upperTeeth, lowerTeeth) {
+        modifier = modifier.pointerInput(toothNumbers) {
             detectTapGestures { offset ->
                 val totalWidth = size.width.toFloat()
-                val archGap = size.height * 0.08f
-                val upperHeight = (size.height - archGap) / 2f
-                val lowerY = upperHeight + archGap
-                val lowerHeight = size.height - lowerY
-
-                var clickedTooth: Int? = null
-                if (offset.y <= upperHeight) {
-                    clickedTooth = toothAtPosition(offset.x, totalWidth, upperTeeth)
-                } else if (offset.y >= lowerY) {
-                    clickedTooth = toothAtPosition(offset.x, totalWidth, lowerTeeth)
-                }
+                val clickedTooth = toothAtPosition(offset.x, totalWidth, toothNumbers)
                 if (clickedTooth != null) {
                     onToothClick(clickedTooth)
                 }
             }
         }
     ) {
-        // Neutral background for the dental chart
         drawRect(Color(0xFFF5F5F5).copy(alpha = 0.5f), topLeft = Offset.Zero, size = size)
-
-        val totalWidth = size.width
-        val archGap = size.height * 0.08f
-        val upperHeight = (size.height - archGap) / 2f
-        val lowerY = upperHeight + archGap
-
         drawArch(
             teeth = teeth,
             prostheticItems = prostheticItems,
             selectedTooth = selectedTooth,
-            toothNumbers = upperTeeth,
+            toothNumbers = toothNumbers,
             layerType = layerType,
             y = 0f,
-            height = upperHeight,
-            totalWidth = totalWidth
-        )
-        drawArch(
-            teeth = teeth,
-            prostheticItems = prostheticItems,
-            selectedTooth = selectedTooth,
-            toothNumbers = lowerTeeth,
-            layerType = layerType,
-            y = lowerY,
-            height = upperHeight,
-            totalWidth = totalWidth
+            height = size.height,
+            totalWidth = size.width
         )
     }
 }
@@ -242,6 +175,8 @@ private fun DrawScope.drawAnatomicalTooth(
 ) {
     val isMissing = tooth?.status == ToothStatus.MISSING
     val isImplant = tooth?.status == ToothStatus.IMPLANT
+    val number = tooth?.number ?: return
+    val toothType = getToothType(number)
 
     if (isMissing) {
         drawCircle(MissingGray, w * 0.3f, Offset(x + w / 2, y + h / 2))
@@ -249,54 +184,28 @@ private fun DrawScope.drawAnatomicalTooth(
     }
 
     val cx = x + w / 2
-    val crownH = h * 0.18f
+    val crownH = h * 0.45f
     val rootH = h - crownH
-    val crownW = w * 0.72f
-    val rootW = w * 0.52f
     val cervicalY = y + crownH
 
-    // Bone background
-    drawRect(BoneBeige.copy(alpha = 0.3f), topLeft = Offset(x, cervicalY), size = Size(w, rootH))
-
-    // Root path — увеличен на 20%, с плавным переходом от коронки
-    val rootPath = Path().apply {
-        moveTo(cx - rootW / 2, cervicalY)
-        cubicTo(cx - rootW * 0.48f, cervicalY + rootH * 0.1f,
-                cx - rootW * 0.4f, cervicalY + rootH * 0.4f,
-                cx - rootW * 0.28f, cervicalY + rootH * 0.7f)
-        cubicTo(cx - rootW * 0.18f, cervicalY + rootH * 0.9f,
-                cx, cervicalY + rootH * 0.95f,
-                cx + rootW * 0.18f, cervicalY + rootH * 0.7f)
-        cubicTo(cx + rootW * 0.4f, cervicalY + rootH * 0.4f,
-                cx + rootW * 0.48f, cervicalY + rootH * 0.1f,
-                cx + rootW / 2, cervicalY)
-        close()
-    }
-
     if (isImplant) {
-        drawRect(ImplantGray, topLeft = Offset(cx - rootW * 0.35f, cervicalY + 3), size = Size(rootW * 0.7f, rootH - 6), style = Stroke(width = 2f))
+        drawRect(ImplantGray, topLeft = Offset(cx - w * 0.3f, cervicalY + 3), size = Size(w * 0.6f, rootH - 6), style = Stroke(width = 2f))
         for (i in 0..4) {
             val ty = cervicalY + 6 + i * (rootH - 12) / 5
-            drawLine(ImplantGray, Offset(cx - rootW * 0.3f, ty), Offset(cx + rootW * 0.3f, ty), strokeWidth = 1f)
+            drawLine(ImplantGray, Offset(cx - w * 0.25f, ty), Offset(cx + w * 0.25f, ty), strokeWidth = 1f)
         }
     } else {
-        drawPath(rootPath, RootColor)
-        drawPath(rootPath, Color(0xFFD7CCC8), style = Stroke(width = 1f))
+        when (toothType) {
+            ToothType.UPPER_MOLAR -> drawUpperMolarRoots(cx, cervicalY, w, rootH)
+            ToothType.LOWER_MOLAR -> drawLowerMolarRoots(cx, cervicalY, w, rootH)
+            ToothType.UPPER_PREMOLAR -> drawPremolarRoots(cx, cervicalY, w, rootH)
+            ToothType.LOWER_PREMOLAR -> drawSingleRoot(cx, cervicalY, w, rootH)
+            else -> drawSingleRoot(cx, cervicalY, w, rootH)
+        }
     }
 
-    // Crown shape — сглаженные углы
-    val crownPath = Path().apply {
-        moveTo(cx - crownW / 2, cervicalY)
-        cubicTo(cx - crownW * 0.48f, cervicalY - crownH * 0.15f,
-                cx - crownW * 0.45f, y + 2f,
-                cx - crownW * 0.3f, y + 0.5f)
-        cubicTo(cx - crownW * 0.15f, y,
-                cx + crownW * 0.15f, y,
-                cx + crownW * 0.3f, y + 0.5f)
-        cubicTo(cx + crownW * 0.45f, y + 2f,
-                cx + crownW * 0.48f, cervicalY - crownH * 0.15f,
-                cx + crownW / 2, cervicalY)
-        close()
+    if (prosthetics.any { it.type == ProstheticType.POST_CORE }) {
+        drawRect(Color(0xFF9E9E9E), topLeft = Offset(cx - w * 0.08f, cervicalY + 3), size = Size(w * 0.16f, rootH * 0.45f))
     }
 
     val crownColor = when {
@@ -312,51 +221,304 @@ private fun DrawScope.drawAnatomicalTooth(
         else -> EnamelColor
     }
 
-    drawPath(crownPath, crownColor)
-    drawPath(crownPath, color = OutlineGray, style = Stroke(width = 0.8f))
+    drawCrownByType(cx, y, w, crownH, cervicalY, toothType, number, crownColor)
 
-    // Subtle shadow on distal side for volume
-    val shadowPath = Path().apply {
-        moveTo(cx + crownW * 0.2f, y + 1f)
-        cubicTo(cx + crownW * 0.4f, y + 2f,
-                cx + crownW / 2 - 1f, cervicalY - crownH * 0.2f,
-                cx + crownW / 2 - 1f, cervicalY)
-        lineTo(cx + crownW / 2, cervicalY)
-        cubicTo(cx + crownW / 2 + 1f, cervicalY - crownH * 0.2f,
-                cx + crownW * 0.45f, y + 2f,
-                cx + crownW * 0.25f, y + 1f)
-        close()
-    }
-    drawPath(shadowPath, ShadowColor)
-
-    // ---- HORIZONTAL DIVIDING LINE (crown/root separation) ----
-    val divideY = cervicalY - 2f
+    val midCrownY = y + crownH * 0.5f
     val dividePath = Path().apply {
-        moveTo(cx - crownW * 0.45f, divideY + 1f)
-        cubicTo(cx - crownW * 0.2f, divideY - 0.5f,
-                cx + crownW * 0.2f, divideY - 0.5f,
-                cx + crownW * 0.45f, divideY + 1f)
+        moveTo(cx - w * 0.35f, midCrownY)
+        cubicTo(cx - w * 0.15f, midCrownY - 1f, cx + w * 0.15f, midCrownY - 1f, cx + w * 0.35f, midCrownY)
     }
     drawPath(dividePath, DividerLineColor, style = Stroke(width = 1.2f))
     val dividePath2 = Path().apply {
-        moveTo(cx - crownW * 0.4f, divideY + 3f)
-        cubicTo(cx - crownW * 0.15f, divideY + 1f,
-                cx + crownW * 0.15f, divideY + 1f,
-                cx + crownW * 0.4f, divideY + 3f)
+        moveTo(cx - w * 0.3f, midCrownY + 2f)
+        cubicTo(cx - w * 0.1f, midCrownY, cx + w * 0.1f, midCrownY, cx + w * 0.3f, midCrownY + 2f)
     }
     drawPath(dividePath2, DividerLineColor.copy(alpha = 0.25f), style = Stroke(width = 0.6f))
 
-    // Post/core marker in root
-    if (prosthetics.any { it.type == ProstheticType.POST_CORE }) {
-        drawRect(Color(0xFF9E9E9E), topLeft = Offset(cx - rootW * 0.1f, cervicalY + 3), size = Size(rootW * 0.2f, rootH * 0.45f))
-    }
-
-    // Gum line
     drawLine(GumRed, start = Offset(x + 1, cervicalY), end = Offset(x + w - 1, cervicalY), strokeWidth = 1.5f)
 
     if (isSelected) {
         drawRect(DarkBlue, topLeft = Offset(x, y), size = Size(w, h), style = Stroke(width = 2f))
     }
+}
+
+// ---- Root drawing helpers ----
+
+private fun DrawScope.drawUpperMolarRoots(cx: Float, cervicalY: Float, w: Float, rootH: Float) {
+    val rootColor = RootColor
+    val outline = DarkOutline
+    val stroke = Stroke(width = 1.5f)
+
+    val palatal = Path().apply {
+        moveTo(cx - w * 0.16f, cervicalY)
+        cubicTo(cx - w * 0.15f, cervicalY + rootH * 0.25f, cx - w * 0.08f, cervicalY + rootH * 0.55f, cx - w * 0.02f, cervicalY + rootH * 0.78f)
+        cubicTo(cx + w * 0.03f, cervicalY + rootH * 0.93f, cx + w * 0.10f, cervicalY + rootH * 0.93f, cx + w * 0.08f, cervicalY + rootH * 0.78f)
+        cubicTo(cx + w * 0.06f, cervicalY + rootH * 0.55f, cx + w * 0.13f, cervicalY + rootH * 0.25f, cx + w * 0.16f, cervicalY)
+        close()
+    }
+    drawPath(palatal, rootColor); drawPath(palatal, outline, style = stroke)
+
+    val mb = Path().apply {
+        moveTo(cx - w * 0.28f, cervicalY)
+        cubicTo(cx - w * 0.30f, cervicalY + rootH * 0.25f, cx - w * 0.34f, cervicalY + rootH * 0.50f, cx - w * 0.36f, cervicalY + rootH * 0.72f)
+        cubicTo(cx - w * 0.37f, cervicalY + rootH * 0.88f, cx - w * 0.26f, cervicalY + rootH * 0.90f, cx - w * 0.18f, cervicalY + rootH * 0.72f)
+        cubicTo(cx - w * 0.12f, cervicalY + rootH * 0.50f, cx - w * 0.10f, cervicalY + rootH * 0.25f, cx - w * 0.10f, cervicalY)
+        close()
+    }
+    drawPath(mb, rootColor); drawPath(mb, outline, style = stroke)
+
+    val db = Path().apply {
+        moveTo(cx + w * 0.10f, cervicalY)
+        cubicTo(cx + w * 0.12f, cervicalY + rootH * 0.25f, cx + w * 0.18f, cervicalY + rootH * 0.50f, cx + w * 0.22f, cervicalY + rootH * 0.72f)
+        cubicTo(cx + w * 0.26f, cervicalY + rootH * 0.90f, cx + w * 0.37f, cervicalY + rootH * 0.88f, cx + w * 0.36f, cervicalY + rootH * 0.72f)
+        cubicTo(cx + w * 0.34f, cervicalY + rootH * 0.50f, cx + w * 0.30f, cervicalY + rootH * 0.25f, cx + w * 0.28f, cervicalY)
+        close()
+    }
+    drawPath(db, rootColor); drawPath(db, outline, style = stroke)
+    drawLine(CanalColor, Offset(cx, cervicalY + 4), Offset(cx + w * 0.03f, cervicalY + rootH * 0.78f), strokeWidth = 2.5f)
+    drawLine(CanalColor, Offset(cx - w * 0.19f, cervicalY + 4), Offset(cx - w * 0.27f, cervicalY + rootH * 0.78f), strokeWidth = 2.5f)
+    drawLine(CanalColor, Offset(cx + w * 0.19f, cervicalY + 4), Offset(cx + w * 0.27f, cervicalY + rootH * 0.78f), strokeWidth = 2.5f)
+}
+
+private fun DrawScope.drawLowerMolarRoots(cx: Float, cervicalY: Float, w: Float, rootH: Float) {
+    val rootColor = RootColor
+    val outline = DarkOutline
+    val stroke = Stroke(width = 1.5f)
+
+    val mesial1 = Path().apply {
+        moveTo(cx - w * 0.28f, cervicalY)
+        cubicTo(cx - w * 0.30f, cervicalY + rootH * 0.25f, cx - w * 0.28f, cervicalY + rootH * 0.50f, cx - w * 0.24f, cervicalY + rootH * 0.72f)
+        cubicTo(cx - w * 0.22f, cervicalY + rootH * 0.90f, cx - w * 0.12f, cervicalY + rootH * 0.92f, cx - w * 0.08f, cervicalY + rootH * 0.72f)
+        cubicTo(cx - w * 0.05f, cervicalY + rootH * 0.50f, cx - w * 0.08f, cervicalY + rootH * 0.25f, cx - w * 0.12f, cervicalY)
+        close()
+    }
+    drawPath(mesial1, rootColor); drawPath(mesial1, outline, style = stroke)
+
+    val mesial2 = Path().apply {
+        moveTo(cx - w * 0.06f, cervicalY)
+        cubicTo(cx - w * 0.04f, cervicalY + rootH * 0.25f, cx - w * 0.01f, cervicalY + rootH * 0.50f, cx + w * 0.02f, cervicalY + rootH * 0.72f)
+        cubicTo(cx + w * 0.05f, cervicalY + rootH * 0.90f, cx + w * 0.14f, cervicalY + rootH * 0.92f, cx + w * 0.16f, cervicalY + rootH * 0.72f)
+        cubicTo(cx + w * 0.18f, cervicalY + rootH * 0.50f, cx + w * 0.16f, cervicalY + rootH * 0.25f, cx + w * 0.10f, cervicalY)
+        close()
+    }
+    drawPath(mesial2, rootColor); drawPath(mesial2, outline, style = stroke)
+
+    val distal = Path().apply {
+        moveTo(cx + w * 0.12f, cervicalY)
+        cubicTo(cx + w * 0.15f, cervicalY + rootH * 0.25f, cx + w * 0.22f, cervicalY + rootH * 0.50f, cx + w * 0.26f, cervicalY + rootH * 0.72f)
+        cubicTo(cx + w * 0.29f, cervicalY + rootH * 0.90f, cx + w * 0.38f, cervicalY + rootH * 0.92f, cx + w * 0.36f, cervicalY + rootH * 0.72f)
+        cubicTo(cx + w * 0.33f, cervicalY + rootH * 0.50f, cx + w * 0.28f, cervicalY + rootH * 0.25f, cx + w * 0.25f, cervicalY)
+        close()
+    }
+    drawPath(distal, rootColor); drawPath(distal, outline, style = stroke)
+    drawLine(CanalColor, Offset(cx - w * 0.20f, cervicalY + 4), Offset(cx - w * 0.20f, cervicalY + rootH * 0.78f), strokeWidth = 2.5f)
+    drawLine(CanalColor, Offset(cx + w * 0.02f, cervicalY + 4), Offset(cx + w * 0.05f, cervicalY + rootH * 0.78f), strokeWidth = 2.5f)
+    drawLine(CanalColor, Offset(cx + w * 0.185f, cervicalY + 4), Offset(cx + w * 0.30f, cervicalY + rootH * 0.78f), strokeWidth = 2.5f)
+}
+
+private fun DrawScope.drawPremolarRoots(cx: Float, cervicalY: Float, w: Float, rootH: Float) {
+    val rootColor = RootColor
+    val outline = DarkOutline
+    val stroke = Stroke(width = 1.5f)
+
+    val mesial = Path().apply {
+        moveTo(cx - w * 0.22f, cervicalY)
+        cubicTo(cx - w * 0.24f, cervicalY + rootH * 0.20f, cx - w * 0.28f, cervicalY + rootH * 0.45f, cx - w * 0.30f, cervicalY + rootH * 0.65f)
+        cubicTo(cx - w * 0.32f, cervicalY + rootH * 0.84f, cx - w * 0.20f, cervicalY + rootH * 0.88f, cx - w * 0.14f, cervicalY + rootH * 0.65f)
+        cubicTo(cx - w * 0.10f, cervicalY + rootH * 0.45f, cx - w * 0.08f, cervicalY + rootH * 0.20f, cx - w * 0.08f, cervicalY)
+        close()
+    }
+    drawPath(mesial, rootColor); drawPath(mesial, outline, style = stroke)
+
+    val distal = Path().apply {
+        moveTo(cx + w * 0.08f, cervicalY)
+        cubicTo(cx + w * 0.10f, cervicalY + rootH * 0.20f, cx + w * 0.15f, cervicalY + rootH * 0.45f, cx + w * 0.20f, cervicalY + rootH * 0.65f)
+        cubicTo(cx + w * 0.24f, cervicalY + rootH * 0.84f, cx + w * 0.34f, cervicalY + rootH * 0.88f, cx + w * 0.30f, cervicalY + rootH * 0.65f)
+        cubicTo(cx + w * 0.26f, cervicalY + rootH * 0.45f, cx + w * 0.22f, cervicalY + rootH * 0.20f, cx + w * 0.22f, cervicalY)
+        close()
+    }
+    drawPath(distal, rootColor); drawPath(distal, outline, style = stroke)
+    drawLine(CanalColor, Offset(cx - w * 0.15f, cervicalY + 4), Offset(cx - w * 0.22f, cervicalY + rootH * 0.72f), strokeWidth = 2.5f)
+    drawLine(CanalColor, Offset(cx + w * 0.15f, cervicalY + 4), Offset(cx + w * 0.24f, cervicalY + rootH * 0.72f), strokeWidth = 2.5f)
+}
+
+private fun DrawScope.drawSingleRoot(cx: Float, cervicalY: Float, w: Float, rootH: Float) {
+    val rootW = w * 0.35f
+    val rootPath = Path().apply {
+        moveTo(cx - rootW, cervicalY)
+        cubicTo(cx - rootW * 0.95f, cervicalY + rootH * 0.15f, cx - rootW * 0.8f, cervicalY + rootH * 0.4f, cx - rootW * 0.5f, cervicalY + rootH * 0.7f)
+        cubicTo(cx - rootW * 0.3f, cervicalY + rootH * 0.9f, cx, cervicalY + rootH * 0.95f, cx + rootW * 0.3f, cervicalY + rootH * 0.7f)
+        cubicTo(cx + rootW * 0.8f, cervicalY + rootH * 0.4f, cx + rootW * 0.95f, cervicalY + rootH * 0.15f, cx + rootW, cervicalY)
+        close()
+    }
+    drawPath(rootPath, RootColor)
+    drawPath(rootPath, DarkOutline, style = Stroke(width = 1.5f))
+    drawLine(CanalColor, Offset(cx, cervicalY + 4), Offset(cx, cervicalY + rootH * 0.82f), strokeWidth = 2.5f)
+}
+
+private fun DrawScope.drawCrownByType(cx: Float, y: Float, w: Float, crownH: Float, cervicalY: Float, toothType: ToothType, number: Int, crownColor: Color) {
+    val isCanine = number == 13 || number == 23 || number == 33 || number == 43
+    val isCentralIncisor = number == 11 || number == 21 || number == 31 || number == 41
+    val isLateralIncisor = number == 12 || number == 22 || number == 32 || number == 42
+
+    val maxW: Float
+    val bottomW: Float
+    val midW: Float
+    val topW: Float
+
+    when (toothType) {
+        ToothType.UPPER_MOLAR, ToothType.LOWER_MOLAR -> {
+            maxW = w * 0.88f
+            bottomW = w * 0.58f
+            midW = w * 0.84f
+            topW = w * 0.50f
+        }
+        ToothType.UPPER_PREMOLAR, ToothType.LOWER_PREMOLAR -> {
+            if (toothType == ToothType.LOWER_PREMOLAR) {
+                maxW = w * 0.88f
+                bottomW = w * 0.70f
+                midW = w * 0.84f
+                topW = w * 0.38f
+            } else {
+                maxW = w * 0.74f
+                bottomW = w * 0.50f
+                midW = w * 0.66f
+                topW = w * 0.38f
+            }
+        }
+        ToothType.UPPER_ANTERIOR, ToothType.LOWER_ANTERIOR -> {
+            if (isCanine) {
+                maxW = w * 0.76f
+                bottomW = w * 0.70f
+                midW = w * 0.74f
+                topW = w * 0.14f
+            } else if (isCentralIncisor) {
+                if (toothType == ToothType.UPPER_ANTERIOR) {
+                    maxW = w * 0.92f
+                    bottomW = w * 0.70f
+                    midW = w * 0.86f
+                    topW = w * 0.90f
+                } else {
+                    maxW = w * 0.86f
+                    bottomW = w * 0.70f
+                    midW = w * 0.76f
+                    topW = w * 0.84f
+                }
+            } else if (isLateralIncisor) {
+                maxW = w * 0.86f
+                bottomW = w * 0.70f
+                midW = w * 0.76f
+                topW = w * 0.84f
+            } else {
+                maxW = w * 0.55f
+                bottomW = w * 0.34f
+                midW = w * 0.46f
+                topW = maxW * 0.70f
+            }
+        }
+        else -> {
+            maxW = w * 0.6f
+            bottomW = w * 0.45f
+            midW = w * 0.52f
+            topW = w * 0.30f
+        }
+    }
+
+    val isMolar = toothType == ToothType.UPPER_MOLAR || toothType == ToothType.LOWER_MOLAR
+    val isPremolar = toothType == ToothType.UPPER_PREMOLAR || toothType == ToothType.LOWER_PREMOLAR
+    val isIncisor = isCentralIncisor || isLateralIncisor
+    val hasSharpCusp = number == 34
+
+    val crownPath = Path().apply {
+        moveTo(cx - bottomW / 2, cervicalY)
+        cubicTo(
+            cx - midW * 0.5f, cervicalY - crownH * 0.15f,
+            cx - midW * 0.5f, y + crownH * 0.35f,
+            cx - topW * 0.5f, y
+        )
+        if (isMolar) {
+            cubicTo(
+                cx - topW * 0.38f, y - crownH * 0.01f,
+                cx - topW * 0.30f, y - crownH * 0.05f,
+                cx - topW * 0.20f, y - crownH * 0.06f
+            )
+            cubicTo(
+                cx - topW * 0.14f, y - crownH * 0.02f,
+                cx - topW * 0.06f, y + crownH * 0.03f,
+                cx, y + crownH * 0.04f
+            )
+            cubicTo(
+                cx + topW * 0.06f, y + crownH * 0.03f,
+                cx + topW * 0.14f, y - crownH * 0.02f,
+                cx + topW * 0.20f, y - crownH * 0.06f
+            )
+            cubicTo(
+                cx + topW * 0.30f, y - crownH * 0.05f,
+                cx + topW * 0.38f, y - crownH * 0.01f,
+                cx + topW * 0.50f, y
+            )
+        } else if (isPremolar) {
+            if (hasSharpCusp) {
+                cubicTo(
+                    cx - topW * 0.38f, y + crownH * 0.04f,
+                    cx - topW * 0.15f, y - crownH * 0.10f,
+                    cx, y - crownH * 0.12f
+                )
+                cubicTo(
+                    cx + topW * 0.15f, y - crownH * 0.10f,
+                    cx + topW * 0.38f, y + crownH * 0.04f,
+                    cx + topW * 0.50f, y
+                )
+            } else {
+                cubicTo(
+                    cx - topW * 0.38f, y + crownH * 0.02f,
+                    cx - topW * 0.18f, y - crownH * 0.06f,
+                    cx, y - crownH * 0.07f
+                )
+                cubicTo(
+                    cx + topW * 0.18f, y - crownH * 0.06f,
+                    cx + topW * 0.38f, y + crownH * 0.02f,
+                    cx + topW * 0.50f, y
+                )
+            }
+        } else if (isIncisor) {
+            cubicTo(
+                cx - topW * 0.48f, y + crownH * 0.08f,
+                cx - topW * 0.28f, y - crownH * 0.05f,
+                cx - topW * 0.12f, y
+            )
+            lineTo(cx + topW * 0.12f, y)
+            cubicTo(
+                cx + topW * 0.28f, y - crownH * 0.05f,
+                cx + topW * 0.48f, y + crownH * 0.08f,
+                cx + topW * 0.50f, y
+            )
+        } else {
+            lineTo(cx + topW * 0.5f, y)
+        }
+        cubicTo(
+            cx + midW * 0.5f, y + crownH * 0.35f,
+            cx + midW * 0.5f, cervicalY - crownH * 0.15f,
+            cx + bottomW * 0.5f, cervicalY
+        )
+        close()
+    }
+
+    drawPath(crownPath, crownColor)
+    drawPath(crownPath, DarkOutline, style = Stroke(width = 1.5f))
+
+    val shadowPath = Path().apply {
+        moveTo(cx + topW * 0.3f, y + crownH * 0.1f)
+        cubicTo(cx + midW * 0.45f, y + crownH * 0.3f,
+                cx + midW * 0.45f, cervicalY - crownH * 0.3f,
+                cx + bottomW * 0.3f, cervicalY)
+        lineTo(cx + bottomW * 0.5f, cervicalY)
+        cubicTo(cx + midW * 0.55f, cervicalY - crownH * 0.3f,
+                cx + midW * 0.55f, y + crownH * 0.3f,
+                cx + topW * 0.45f, y + crownH * 0.1f)
+        close()
+    }
+    drawPath(shadowPath, ShadowColor)
 }
 
 private fun DrawScope.drawCrownTooth(
@@ -466,7 +628,7 @@ private fun DrawScope.drawRestorationTooth(
 
     // Horizontal dividing line
     val divideY = cy - r * 0.1f
-    drawLine(DividerLineColor, Offset(cx - r * 0.7f, divideY), Offset(cx + r * 0.7f, divideY), strokeWidth = 1.2f)
+    drawLine(DividerLineColor, Offset(cx - r * 0.7f, divideY), Offset(cx + r * 0.7f, divideY), strokeWidth = 2.5f)
 
     if (prosthetics.isNotEmpty() && prosthetics.none { it.type == ProstheticType.CROWN || it.type == ProstheticType.IMPLANT || it.type == ProstheticType.BRIDGE || it.type == ProstheticType.PONTIC }) {
         val dotX = cx - r * 0.3f
@@ -544,39 +706,23 @@ private fun DrawScope.drawContourTooth(
 }
 
 @Composable
-private fun ToothNumbering(
-    upperTeeth: List<Int>,
-    lowerTeeth: List<Int>,
+internal fun ToothNumbering(
+    toothNumbers: List<Int>,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            upperTeeth.forEach { number ->
-                Text(
-                    text = "$number",
-                    fontSize = 8.sp,
-                    color = Color(0xFF212121),
-                    modifier = Modifier.width(24.dp),
-                    maxLines = 1
-                )
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            lowerTeeth.forEach { number ->
-                Text(
-                    text = "$number",
-                    fontSize = 8.sp,
-                    color = Color(0xFF212121),
-                    modifier = Modifier.width(24.dp),
-                    maxLines = 1
-                )
-            }
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        toothNumbers.forEach { number ->
+            Text(
+                text = "$number",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF212121),
+                modifier = Modifier.width(28.dp),
+                maxLines = 1
+            )
         }
     }
 }

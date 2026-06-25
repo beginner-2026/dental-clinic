@@ -24,6 +24,7 @@ import com.dental.data.InvoiceRepository
 import com.dental.model.*
 import com.dental.ui.odontogram.OdontogramLayers
 import com.dental.ui.odontogram.OdontogramViewModel
+import com.dental.ui.odontogram.QuadrantOdontogram
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +36,7 @@ fun PatientDetailScreen(
 ) {
     val state by odontogramViewModel.state.collectAsState()
     var tabIndex by remember { mutableIntStateOf(0) }
+    var isQuadrantView by remember { mutableStateOf(false) }
 
     var currentInvoice by remember { mutableStateOf<Invoice?>(null) }
     var discountInput by remember { mutableStateOf("0") }
@@ -93,21 +95,53 @@ fun PatientDetailScreen(
             }
 
             TabRow(selectedTabIndex = tabIndex) {
-                Tab(selected = tabIndex == 0, onClick = { tabIndex = 0 }, text = { Text("Зубная формула") }, icon = { Icon(Icons.Default.Favorite, contentDescription = null) })
+                Tab(selected = tabIndex == 0, onClick = { tabIndex = 0 }, text = { Text("Медицинская карта") }, icon = { Icon(Icons.Default.Favorite, contentDescription = null) })
                 Tab(selected = tabIndex == 1, onClick = { tabIndex = 1 }, text = { Text("Счёт") }, icon = { Icon(Icons.Default.DateRange, contentDescription = null) })
             }
 
             when (tabIndex) {
                 0 -> {
-                    Spacer(Modifier.height(8.dp))
-                    OdontogramLayers(
-                        teeth = state.teeth,
-                        prostheticItems = state.prostheticItems,
-                        selectedTooth = state.selectedTooth,
-                        activeLayer = state.activeLayer,
-                        onToothClick = { odontogramViewModel.selectTooth(it) },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Зубная формула",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = !isQuadrantView,
+                            onClick = { isQuadrantView = false },
+                            label = { Text("Полная", fontSize = 12.sp) }
+                        )
+                        FilterChip(
+                            selected = isQuadrantView,
+                            onClick = { isQuadrantView = true },
+                            label = { Text("По квадратам", fontSize = 12.sp) }
+                        )
+                    }
+                    if (isQuadrantView) {
+                        QuadrantOdontogram(
+                            teeth = state.teeth,
+                            prostheticItems = state.prostheticItems,
+                            selectedTooth = state.selectedTooth,
+                            activeLayer = state.activeLayer,
+                            onToothClick = { odontogramViewModel.selectTooth(it) },
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+                        )
+                    } else {
+                        OdontogramLayers(
+                            teeth = state.teeth,
+                            prostheticItems = state.prostheticItems,
+                            selectedTooth = state.selectedTooth,
+                            activeLayer = state.activeLayer,
+                            onToothClick = { odontogramViewModel.selectTooth(it) },
+                            modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+                        )
+                    }
                 }
                 1 -> {
                     currentInvoice?.let { inv ->
