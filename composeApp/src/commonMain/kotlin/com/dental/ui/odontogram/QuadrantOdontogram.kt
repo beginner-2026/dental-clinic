@@ -22,9 +22,12 @@ fun QuadrantOdontogram(
     teeth: List<Tooth>,
     prostheticItems: List<ProstheticItem>,
     selectedTooth: Int?,
+    selectedToothPart: ToothPart? = null,
     activeLayer: OdontogramLayer,
-    onToothClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    onToothClick: (Int, ToothPart?) -> Unit,
+    modifier: Modifier = Modifier,
+    crownSelections: Map<Int, CrownOption> = emptyMap(),
+    rootSelections: Map<Int, RootOption> = emptyMap()
 ) {
     val quadrants = listOf(
         QuadrantDef("К1 — верхний правый", (18 downTo 11).toList()),
@@ -77,9 +80,12 @@ fun QuadrantOdontogram(
                         teeth = teeth,
                         prostheticItems = prostheticItems,
                         selectedTooth = selectedTooth,
+                        selectedToothPart = selectedToothPart,
                         layerType = LayerType.ANATOMICAL,
                         toothNumbers = q.toothNumbers,
                         onToothClick = onToothClick,
+                        crownSelections = crownSelections,
+                        rootSelections = rootSelections,
                         modifier = Modifier.fillMaxWidth().height(140.dp)
                     )
                     ToothNumbering(

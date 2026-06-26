@@ -52,3 +52,29 @@ enum class ProstheticType { CROWN, BRIDGE, IMPLANT, TEMPORARY, REMOVAL, POST_COR
 enum class ProstheticMaterial { METAL_CERAMIC, ZIRCONIUM, METAL, COMPOSITE, CERAMIC }
 
 enum class ProstheticStage { EXISTING, PLANNED, IN_PROGRESS, COMPLETED }
+
+enum class ToothPart { CROWN, ROOT }
+
+enum class CrownOption {
+    METAL_CERAMIC,
+    CAST_SOLID,
+    ZIRCONIUM_OXIDE,
+    FULL_CERAMIC,
+    IMPLANT_CROWN,
+    TEMPORARY,
+    ARTIFICIAL_MC,
+    ARTIFICIAL_CAST,
+    ARTIFICIAL_REMOVABLE,
+    PLOMBA,
+    MISSING
+}
+
+enum class RootOption {
+    POST_CORE,
+    ANCHOR_PIN,
+    ENDO_TREATED,
+    ENDO_PROBLEM,
+    IMPLANT,
+    RETAINED,
+    MISSING
+}

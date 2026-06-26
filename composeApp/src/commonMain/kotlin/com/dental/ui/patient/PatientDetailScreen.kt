@@ -25,6 +25,8 @@ import com.dental.model.*
 import com.dental.ui.odontogram.OdontogramLayers
 import com.dental.ui.odontogram.OdontogramViewModel
 import com.dental.ui.odontogram.QuadrantOdontogram
+import com.dental.ui.odontogram.ToothActionSheet
+import com.dental.ui.odontogram.ToothPartSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,8 +130,11 @@ fun PatientDetailScreen(
                             teeth = state.teeth,
                             prostheticItems = state.prostheticItems,
                             selectedTooth = state.selectedTooth,
+                            selectedToothPart = state.selectedToothPart,
                             activeLayer = state.activeLayer,
-                            onToothClick = { odontogramViewModel.selectTooth(it) },
+                            onToothClick = { number, part -> odontogramViewModel.selectTooth(number, part) },
+                            crownSelections = state.crownSelections,
+                            rootSelections = state.rootSelections,
                             modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
                         )
                     } else {
@@ -137,8 +142,11 @@ fun PatientDetailScreen(
                             teeth = state.teeth,
                             prostheticItems = state.prostheticItems,
                             selectedTooth = state.selectedTooth,
+                            selectedToothPart = state.selectedToothPart,
                             activeLayer = state.activeLayer,
-                            onToothClick = { odontogramViewModel.selectTooth(it) },
+                            onToothClick = { number, part -> odontogramViewModel.selectTooth(number, part) },
+                            crownSelections = state.crownSelections,
+                            rootSelections = state.rootSelections,
                             modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
                         )
                     }
@@ -170,6 +178,34 @@ fun PatientDetailScreen(
                 }
             }
         }
+    }
+
+    // Tooth part bottom sheet (crown / root selection)
+    if (state.showToothPartMenu && state.selectedTooth != null && state.selectedToothPart != null) {
+        ToothPartSheet(
+            toothNumber = state.selectedTooth!!,
+            part = state.selectedToothPart!!,
+            onDismiss = { odontogramViewModel.dismissPartMenu() },
+            onApplyCrown = { option -> odontogramViewModel.applyCrownOption(state.selectedTooth!!, option) },
+            onApplyRoot = { option -> odontogramViewModel.applyRootOption(state.selectedTooth!!, option) }
+        )
+    }
+
+    // Tooth action bottom sheet (prosthetic selection)
+    if (state.showToothMenu && state.selectedTooth != null) {
+        val tooth = state.teeth.find { it.number == state.selectedTooth }
+        ToothActionSheet(
+            toothNumber = state.selectedTooth!!,
+            toothStatus = tooth?.status ?: ToothStatus.PRESENT,
+            existingProsthetics = state.prostheticItems,
+            isBridgeMode = state.bridgeMode,
+            onDismiss = { odontogramViewModel.dismissMenu() },
+            onSelectProsthetic = { type, material, stage ->
+                odontogramViewModel.applyProsthetic(type, material, stage)
+            },
+            onToggleBridgeMode = { odontogramViewModel.toggleBridgeMode() },
+            onChangeToothStatus = { status -> odontogramViewModel.setToothStatus(state.selectedTooth!!, status) }
+        )
     }
 
     if (showPriceListDialog) {

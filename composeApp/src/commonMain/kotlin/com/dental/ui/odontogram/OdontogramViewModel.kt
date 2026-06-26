@@ -14,14 +14,18 @@ data class OdontogramState(
     val viewMode: OdontogramViewMode = OdontogramViewMode.FULL_JAW,
     val activeLayer: OdontogramLayer = OdontogramLayer.ORTHO,
     val selectedTooth: Int? = null,
+    val selectedToothPart: ToothPart? = null,
     val showToothMenu: Boolean = false,
+    val showToothPartMenu: Boolean = false,
     val bridgeMode: Boolean = false,
     val bridgeFirstTooth: Int? = null,
     val bridgeSecondTooth: Int? = null,
     val undoStack: List<ProstheticItem> = emptyList(),
     val readOnly: Boolean = false,
     val currentPatientId: Long? = null,
-    val currentPatientName: String = ""
+    val currentPatientName: String = "",
+    val crownSelections: Map<Int, CrownOption> = emptyMap(),
+    val rootSelections: Map<Int, RootOption> = emptyMap()
 )
 
 enum class OdontogramViewMode { FULL_JAW, QUADRANT }
@@ -79,7 +83,7 @@ class OdontogramViewModel(
         _state.value = _state.value.copy(readOnly = !_state.value.readOnly)
     }
 
-    fun selectTooth(number: Int) {
+    fun selectTooth(number: Int, part: ToothPart? = null) {
         val s = _state.value
         if (s.readOnly) return
 
@@ -98,6 +102,12 @@ class OdontogramViewModel(
                     )
                 }
             }
+        } else if (part != null) {
+            _state.value = s.copy(
+                selectedTooth = number,
+                selectedToothPart = part,
+                showToothPartMenu = true
+            )
         } else {
             _state.value = s.copy(
                 selectedTooth = number,
@@ -109,7 +119,9 @@ class OdontogramViewModel(
     fun dismissMenu() {
         _state.value = _state.value.copy(
             selectedTooth = null,
+            selectedToothPart = null,
             showToothMenu = false,
+            showToothPartMenu = false,
             bridgeMode = false,
             bridgeFirstTooth = null,
             bridgeSecondTooth = null
@@ -197,6 +209,39 @@ class OdontogramViewModel(
             bridgeMode = false,
             bridgeFirstTooth = null,
             bridgeSecondTooth = null
+        )
+    }
+
+    fun applyCrownOption(number: Int, option: CrownOption) {
+        val s = _state.value
+        val updated = if (option == CrownOption.MISSING) {
+            s.crownSelections + (number to option) to s.rootSelections
+        } else {
+            s.crownSelections + (number to option) to s.rootSelections
+        }
+        _state.value = s.copy(
+            crownSelections = updated.first,
+            showToothPartMenu = false,
+            selectedTooth = null,
+            selectedToothPart = null
+        )
+    }
+
+    fun applyRootOption(number: Int, option: RootOption) {
+        val s = _state.value
+        _state.value = s.copy(
+            rootSelections = s.rootSelections + (number to option),
+            showToothPartMenu = false,
+            selectedTooth = null,
+            selectedToothPart = null
+        )
+    }
+
+    fun dismissPartMenu() {
+        _state.value = _state.value.copy(
+            showToothPartMenu = false,
+            selectedTooth = null,
+            selectedToothPart = null
         )
     }
 

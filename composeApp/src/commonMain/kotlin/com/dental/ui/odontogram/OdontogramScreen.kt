@@ -166,8 +166,11 @@ fun OdontogramScreen(
                         teeth = state.teeth,
                         prostheticItems = state.prostheticItems,
                         selectedTooth = state.selectedTooth,
+                        selectedToothPart = state.selectedToothPart,
                         activeLayer = state.activeLayer,
-                        onToothClick = { viewModel.selectTooth(it) }
+                        onToothClick = { number, part -> viewModel.selectTooth(number, part) },
+                        crownSelections = state.crownSelections,
+                        rootSelections = state.rootSelections
                     )
                 } else {
                     QuadrantView(
@@ -176,10 +179,13 @@ fun OdontogramScreen(
                         prostheticItems = state.prostheticItems,
                         activeLayer = state.activeLayer,
                         selectedTooth = state.selectedTooth,
+                        selectedToothPart = state.selectedToothPart,
                         bridgeMode = state.bridgeMode,
                         bridgeFirstTooth = state.bridgeFirstTooth,
                         bridgeSecondTooth = state.bridgeSecondTooth,
-                        onToothClick = { viewModel.selectTooth(it) }
+                        onToothClick = { number, part -> viewModel.selectTooth(number, part) },
+                        crownSelections = state.crownSelections,
+                        rootSelections = state.rootSelections
                     )
                 }
             }
@@ -214,7 +220,18 @@ fun OdontogramScreen(
         }
     }
 
-    // Tooth action bottom sheet
+    // Tooth part bottom sheet (crown / root selection)
+    if (state.showToothPartMenu && state.selectedTooth != null && state.selectedToothPart != null) {
+        ToothPartSheet(
+            toothNumber = state.selectedTooth!!,
+            part = state.selectedToothPart!!,
+            onDismiss = { viewModel.dismissPartMenu() },
+            onApplyCrown = { option -> viewModel.applyCrownOption(state.selectedTooth!!, option) },
+            onApplyRoot = { option -> viewModel.applyRootOption(state.selectedTooth!!, option) }
+        )
+    }
+
+    // Tooth action bottom sheet (prosthetic selection)
     if (state.showToothMenu && state.selectedTooth != null) {
         val tooth = state.teeth.find { it.number == state.selectedTooth }
         ToothActionSheet(
@@ -364,10 +381,13 @@ private fun QuadrantView(
     prostheticItems: List<ProstheticItem>,
     activeLayer: OdontogramLayer,
     selectedTooth: Int?,
+    selectedToothPart: ToothPart? = null,
     bridgeMode: Boolean,
     bridgeFirstTooth: Int?,
     bridgeSecondTooth: Int?,
-    onToothClick: (Int) -> Unit
+    onToothClick: (Int, ToothPart?) -> Unit,
+    crownSelections: Map<Int, CrownOption> = emptyMap(),
+    rootSelections: Map<Int, RootOption> = emptyMap()
 ) {
     val toothNumbers = OdontogramViewModel.getQuadrantToothNumbers(quadrant)
     val jawLabel = if (quadrant <= 2) "Верхняя" else "Нижняя"
@@ -388,10 +408,13 @@ private fun QuadrantView(
             teeth = teeth,
             prostheticItems = prostheticItems,
             selectedTooth = selectedTooth,
+            selectedToothPart = selectedToothPart,
             activeLayer = activeLayer,
             onToothClick = onToothClick,
             upperTeeth = if (quadrant <= 2) layerToothNumbers else emptyList(),
-            lowerTeeth = if (quadrant >= 3) layerToothNumbers else emptyList()
+            lowerTeeth = if (quadrant >= 3) layerToothNumbers else emptyList(),
+            crownSelections = crownSelections,
+            rootSelections = rootSelections
         )
 
         Spacer(Modifier.height(16.dp))
@@ -401,7 +424,7 @@ private fun QuadrantView(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(
-                    onClick = { onToothClick(toothNumbers.first()) },
+                    onClick = { onToothClick(toothNumbers.first(), null) },
                     modifier = Modifier.height(36.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                 ) {
