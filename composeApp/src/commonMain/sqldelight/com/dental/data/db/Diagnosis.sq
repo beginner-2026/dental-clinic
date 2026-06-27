@@ -1,0 +1,21 @@
+CREATE TABLE DiagnosisEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    patientId INTEGER NOT NULL,
+    code TEXT,
+    diagnosisText TEXT NOT NULL,
+    toothNumber INTEGER,
+    createdAt INTEGER NOT NULL
+);
+
+getByPatientId:
+SELECT * FROM DiagnosisEntity WHERE patientId = ? ORDER BY createdAt;
+
+insert:
+INSERT INTO DiagnosisEntity(patientId, code, diagnosisText, toothNumber, createdAt)
+VALUES (?, ?, ?, ?, ?);
+
+deleteByPatientId:
+DELETE FROM DiagnosisEntity WHERE patientId = ?;
+
+getLastInsertId:
+SELECT last_insert_rowid();

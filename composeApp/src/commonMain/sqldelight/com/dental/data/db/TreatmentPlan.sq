@@ -1,0 +1,20 @@
+CREATE TABLE TreatmentPlanEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    patientId INTEGER NOT NULL,
+    toothNumbers TEXT NOT NULL,
+    procedure TEXT NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+getByPatientId:
+SELECT * FROM TreatmentPlanEntity WHERE patientId = ? ORDER BY createdAt;
+
+insert:
+INSERT INTO TreatmentPlanEntity(patientId, toothNumbers, procedure, createdAt)
+VALUES (?, ?, ?, ?);
+
+deleteByPatientId:
+DELETE FROM TreatmentPlanEntity WHERE patientId = ?;
+
+getLastInsertId:
+SELECT last_insert_rowid();

@@ -10,10 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.dental.data.AppointmentRepository
 import com.dental.data.DatabaseDriverFactory
+import com.dental.data.DiagnosisRepository
 import com.dental.data.InvoiceRepository
 import com.dental.data.PatientRepository
 import com.dental.data.SeedData
 import com.dental.data.ToothRepository
+import com.dental.data.TreatmentPlanRepository
 import com.dental.data.db.DentalDatabase
 import com.dental.model.*
 import com.dental.ui.navigation.AppScreen
@@ -31,6 +33,8 @@ fun App(driverFactory: DatabaseDriverFactory) {
     val patientRepo = remember { PatientRepository(database) }
     val toothRepo = remember { ToothRepository(database) }
     val invoiceRepo = remember { InvoiceRepository(database) }
+    val diagnosisRepo = remember { DiagnosisRepository(database) }
+    val treatmentPlanRepo = remember { TreatmentPlanRepository(database) }
 
     var currentScreen by remember { mutableStateOf(AppScreen.PATIENTS) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -92,6 +96,8 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     patient = currentPatient,
                     odontogramViewModel = odontogramViewModel,
                     invoiceRepository = invoiceRepo,
+                    diagnosisRepository = diagnosisRepo,
+                    treatmentPlanRepository = treatmentPlanRepo,
                     onBack = { selectedPatient = null }
                 )
             } else {
