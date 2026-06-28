@@ -253,7 +253,6 @@ fun InvoiceScreen(
             onSelect = { item, qty ->
                 val newItem = InvoiceItem(
                     serviceName = item.name,
-                    serviceCode = item.code,
                     quantity = qty,
                     unitPrice = item.defaultPrice
                 )
@@ -337,7 +336,19 @@ private fun PriceListDialog(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("1") }
-    val filtered = remember(searchQuery) { PriceList.search(searchQuery) }
+    var allItems by remember { mutableStateOf<List<PriceListItem>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        allItems = emptyList()
+    }
+
+    val filtered = remember(searchQuery, allItems) {
+        if (searchQuery.isBlank()) allItems
+        else {
+            val q = searchQuery.lowercase()
+            allItems.filter { it.name.lowercase().contains(q) }
+        }
+    }
     val grouped = remember(filtered) { filtered.groupBy { it.category } }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -381,7 +392,6 @@ private fun PriceListDialog(
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(plItem.name, style = MaterialTheme.typography.bodyMedium)
-                                    Text(plItem.code ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Text(formatPrice(plItem.defaultPrice), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(8.dp))
@@ -479,7 +489,7 @@ private fun TotalRow(
 }
 
 private fun formatPrice(amount: Long): String {
-    val units = amount / 100
+    val rubles = amount / 100
     val cents = amount % 100
-    return "$units.${if (cents < 10) "0" else ""}$cents"
+    return rubles.toString().reversed().chunked(3).joinToString(" ").reversed() + "." + (if (cents < 10) "0" else "") + cents
 }

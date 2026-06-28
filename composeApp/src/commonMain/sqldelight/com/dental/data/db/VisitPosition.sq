@@ -1,0 +1,70 @@
+CREATE TABLE PositionEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    sortOrder INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE VisitEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    patientId INTEGER NOT NULL,
+    visitDate INTEGER NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+CREATE TABLE VisitPositionEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    visitId INTEGER NOT NULL,
+    positionId INTEGER NOT NULL,
+    toothNumbers TEXT NOT NULL DEFAULT '',
+    selectedAt INTEGER NOT NULL,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (visitId) REFERENCES VisitEntity(id),
+    FOREIGN KEY (positionId) REFERENCES PositionEntity(id)
+);
+
+CREATE INDEX idx_visit_position_visit_id ON VisitPositionEntity(visitId);
+
+getAllPositions:
+SELECT * FROM PositionEntity ORDER BY sortOrder;
+
+insertPosition:
+INSERT INTO PositionEntity(name, sortOrder) VALUES (?, ?);
+
+getVisitsByPatientId:
+SELECT * FROM VisitEntity WHERE patientId = ? ORDER BY visitDate DESC;
+
+getVisitById:
+SELECT * FROM VisitEntity WHERE id = ?;
+
+insertVisit:
+INSERT INTO VisitEntity(patientId, visitDate, createdAt) VALUES (?, ?, ?);
+
+deleteVisit:
+DELETE FROM VisitEntity WHERE id = ?;
+
+getPositionsByVisitId:
+SELECT p.id, p.name, p.sortOrder, vp.toothNumbers
+FROM PositionEntity p
+INNER JOIN VisitPositionEntity vp ON vp.positionId = p.id
+WHERE vp.visitId = ?
+ORDER BY vp.sortOrder;
+
+getVisitPositionsByVisitId:
+SELECT vp.positionId FROM VisitPositionEntity vp
+WHERE vp.visitId = ?
+ORDER BY vp.sortOrder;
+
+insertVisitPosition:
+INSERT INTO VisitPositionEntity(visitId, positionId, toothNumbers, selectedAt, sortOrder) VALUES (?, ?, ?, ?, ?);
+
+deleteVisitPositionsByVisitId:
+DELETE FROM VisitPositionEntity WHERE visitId = ?;
+
+getLastInsertId:
+SELECT last_insert_rowid();
+
+positionExists:
+SELECT COUNT(*) AS cnt FROM PositionEntity;
+
+getPositionById:
+SELECT * FROM PositionEntity WHERE id = ?;

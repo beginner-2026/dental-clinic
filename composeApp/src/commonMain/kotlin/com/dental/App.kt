@@ -15,7 +15,9 @@ import com.dental.data.InvoiceRepository
 import com.dental.data.PatientRepository
 import com.dental.data.SeedData
 import com.dental.data.ToothRepository
+import com.dental.data.PriceListRepository
 import com.dental.data.TreatmentPlanRepository
+import com.dental.data.VisitPositionRepository
 import com.dental.data.db.DentalDatabase
 import com.dental.model.*
 import com.dental.ui.navigation.AppScreen
@@ -35,6 +37,8 @@ fun App(driverFactory: DatabaseDriverFactory) {
     val invoiceRepo = remember { InvoiceRepository(database) }
     val diagnosisRepo = remember { DiagnosisRepository(database) }
     val treatmentPlanRepo = remember { TreatmentPlanRepository(database) }
+    val visitPositionRepo = remember { VisitPositionRepository(database) }
+    val priceListRepo = remember { PriceListRepository(database) }
 
     var currentScreen by remember { mutableStateOf(AppScreen.PATIENTS) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -98,6 +102,8 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     invoiceRepository = invoiceRepo,
                     diagnosisRepository = diagnosisRepo,
                     treatmentPlanRepository = treatmentPlanRepo,
+                    visitPositionRepository = visitPositionRepo,
+                    priceListRepository = priceListRepo,
                     onBack = { selectedPatient = null }
                 )
             } else {
@@ -112,7 +118,7 @@ fun App(driverFactory: DatabaseDriverFactory) {
                         onReload = { reloadPatients() },
                         onPatientClick = { selectedPatient = it }
                     )
-                    AppScreen.PRICE_LIST -> PriceListScreen()
+                    AppScreen.PRICE_LIST -> PriceListScreen(priceListRepo)
                 }
             }
         }

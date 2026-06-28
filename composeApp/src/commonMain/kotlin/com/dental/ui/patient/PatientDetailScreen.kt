@@ -23,8 +23,11 @@ import com.dental.data.DiagnosisRepository
 import com.dental.data.InvoiceCalculator
 import com.dental.data.InvoiceRepository
 import com.dental.data.TreatmentPlanRepository
+import com.dental.data.PriceListRepository
+import com.dental.data.VisitPositionRepository
 import com.dental.model.*
 import com.dental.ui.diagnosis.DiagnosisEditorScreen
+import kotlinx.datetime.*
 import com.dental.ui.treatmentplan.TreatmentPlanEditorScreen
 import com.dental.ui.odontogram.OdontogramLayers
 import com.dental.ui.odontogram.OdontogramViewModel
@@ -40,6 +43,8 @@ fun PatientDetailScreen(
     invoiceRepository: InvoiceRepository,
     diagnosisRepository: DiagnosisRepository,
     treatmentPlanRepository: TreatmentPlanRepository,
+    visitPositionRepository: VisitPositionRepository,
+    priceListRepository: PriceListRepository,
     onBack: () -> Unit
 ) {
     val state by odontogramViewModel.state.collectAsState()
@@ -57,6 +62,24 @@ fun PatientDetailScreen(
     var treatmentPlans by remember { mutableStateOf<List<TreatmentPlanItem>>(emptyList()) }
     var showTreatmentPlanEditor by remember { mutableStateOf(false) }
 
+    var visits by remember { mutableStateOf<List<Visit>>(emptyList()) }
+    var allPositions by remember { mutableStateOf<List<Position>>(emptyList()) }
+    var showAddVisitDialog by remember { mutableStateOf(false) }
+    var showPositionSelectionDialog by remember { mutableStateOf(false) }
+    var editingVisit by remember { mutableStateOf<Visit?>(null) }
+    var selectedPositionIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var positionToothNumbers by remember { mutableStateOf<Map<Long, String>>(emptyMap()) }
+    var visitDateMillis by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
+    var showVisitDatePicker by remember { mutableStateOf(false) }
+
+    fun loadVisits() {
+        visits = visitPositionRepository.getVisitsByPatientId(patient.id)
+    }
+
+    fun loadAllPositions() {
+        allPositions = visitPositionRepository.getAllPositions()
+    }
+
     fun loadDiagnoses() {
         diagnoses = diagnosisRepository.getByPatientId(patient.id)
     }
@@ -72,6 +95,8 @@ fun PatientDetailScreen(
         )
         loadDiagnoses()
         loadTreatmentPlans()
+        loadAllPositions()
+        loadVisits()
         val existing = invoiceRepository.getByPatient(patient.id)
         if (existing != null) {
             currentInvoice = existing
@@ -321,11 +346,19 @@ fun PatientDetailScreen(
                                         }
                                     }
                                     "Дневник посещений" -> {
-                                        Text(
-                                            text = "Раздел в разработке",
-                                            modifier = Modifier.padding(16.dp),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        VisitDiarySection(
+                                            visits = visits,
+                                            onAddVisit = { showAddVisitDialog = true },
+                                            onEditPositions = { visit ->
+                                                editingVisit = visit
+                                                selectedPositionIds = visit.positions.map { it.position.id }.toSet()
+                                                positionToothNumbers = visit.positions.associate { it.position.id to it.toothNumbers }
+                                                showPositionSelectionDialog = true
+                                            },
+                                            onDeleteVisit = { visit ->
+                                                visitPositionRepository.deleteVisit(visit.id)
+                                                loadVisits()
+                                            }
                                         )
                                     }
                                     "Счёт" -> {
@@ -359,7 +392,7 @@ fun PatientDetailScreen(
                     }
                 }
                 1 -> {
-                    PriceListTabContent()
+                    PriceListTabContent(priceListRepository)
                 }
             }
         }
@@ -421,12 +454,12 @@ fun PatientDetailScreen(
 
     if (showPriceListDialog) {
         PriceListSelectionDialog(
+            repository = priceListRepository,
             onDismiss = { showPriceListDialog = false },
             onSelect = { plItem, qty ->
                 currentInvoice?.let { inv ->
                     val newItem = InvoiceItem(
                         serviceName = plItem.name,
-                        serviceCode = plItem.code,
                         quantity = qty,
                         unitPrice = plItem.defaultPrice
                     )
@@ -461,6 +494,64 @@ fun PatientDetailScreen(
                 TextButton(onClick = { showDeleteConfirm = false }) { Text("Отмена") }
             }
         )
+    }
+
+    if (showAddVisitDialog) {
+        AddVisitDialog(
+            initialDateMillis = visitDateMillis,
+            onDateChanged = { visitDateMillis = it },
+            onConfirm = {
+                if (visitDateMillis > 0) {
+                    visitPositionRepository.createVisit(patient.id, visitDateMillis)
+                    visitDateMillis = Clock.System.now().toEpochMilliseconds()
+                    showAddVisitDialog = false
+                    loadVisits()
+                }
+            },
+            onDismiss = {
+                visitDateMillis = Clock.System.now().toEpochMilliseconds()
+                showAddVisitDialog = false
+            }
+        )
+    }
+
+    if (showPositionSelectionDialog) {
+        val visit = editingVisit
+        if (visit != null) {
+            PositionSelectionDialog(
+                allPositions = allPositions,
+                selectedPositionIds = selectedPositionIds,
+                positionToothNumbers = positionToothNumbers,
+                onTogglePosition = { posId ->
+                    selectedPositionIds = if (posId in selectedPositionIds) {
+                        selectedPositionIds - posId
+                    } else {
+                        selectedPositionIds + posId
+                    }
+                },
+                onToothNumbersChanged = { posId, value ->
+                    positionToothNumbers = positionToothNumbers + (posId to value)
+                },
+                onSave = {
+                    visitPositionRepository.saveVisitPositions(
+                        visitId = visit.id,
+                        positionIds = selectedPositionIds.toList(),
+                        toothNumbersMap = positionToothNumbers
+                    )
+                    showPositionSelectionDialog = false
+                    editingVisit = null
+                    loadVisits()
+                },
+                onReset = {
+                    selectedPositionIds = emptySet()
+                    positionToothNumbers = emptyMap()
+                },
+                onDismiss = {
+                    showPositionSelectionDialog = false
+                    editingVisit = null
+                }
+            )
+        }
     }
 }
 
@@ -607,9 +698,29 @@ private fun InvoiceTabContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PriceListTabContent() {
+private fun PriceListTabContent(repository: PriceListRepository) {
     var searchQuery by remember { mutableStateOf("") }
+    var items by remember { mutableStateOf<List<PriceListItem>>(emptyList()) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var editingItem by remember { mutableStateOf<PriceListItem?>(null) }
+    var addingCategory by remember { mutableStateOf("") }
+    var reloadKey by remember { mutableStateOf(0) }
+
+    LaunchedEffect(reloadKey) {
+        items = repository.getAll()
+    }
+
+    val filtered = remember(searchQuery, items) {
+        if (searchQuery.isBlank()) items
+        else {
+            val q = searchQuery.lowercase()
+            items.filter { it.name.lowercase().contains(q) || it.category.lowercase().contains(q) }
+        }
+    }
+    val grouped = remember(filtered) { filtered.groupBy { it.category } }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(8.dp))
@@ -623,46 +734,111 @@ private fun PriceListTabContent() {
         )
         Spacer(Modifier.height(8.dp))
 
-        val filteredItems = PriceList.search(searchQuery)
-        val grouped = remember(filteredItems) { filteredItems.groupBy { it.category } }
-
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            grouped.forEach { (category, items) ->
+            grouped.forEach { (category, categoryItems) ->
                 item(key = "cat_$category") {
-                    Text(
-                        text = category,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = category,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f).padding(vertical = 8.dp)
+                        )
+                        IconButton(
+                            onClick = {
+                                addingCategory = category
+                                showAddDialog = true
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Добавить", modifier = Modifier.size(20.dp))
+                        }
+                    }
                 }
-                items(items, key = { it.id }) { item ->
+                items(categoryItems, key = { it.id }) { item ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        onClick = {
+                            editingItem = item
+                            showEditDialog = true
+                        }
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(text = item.name, style = MaterialTheme.typography.bodyMedium)
-                                if (item.code.isNotBlank()) {
-                                    Text(text = item.code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
+                                Text(
+                                    text = item.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = 18.sp
+                                )
                             }
+                            Spacer(Modifier.width(8.dp))
                             Text(
-                                text = formatPrice(item.defaultPrice),
+                                text = _formatPrice(item.defaultPrice),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
+                            IconButton(
+                                onClick = {
+                                    repository.delete(item.id)
+                                    reloadKey++
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = Color.Red, modifier = Modifier.size(18.dp))
+                            }
                         }
                     }
                 }
                 item { Spacer(Modifier.height(4.dp)) }
             }
         }
+    }
+
+    if (showEditDialog && editingItem != null) {
+        _PriceItemEditDialog(
+            title = "Редактировать услугу",
+            initialName = editingItem!!.name,
+            initialCategory = editingItem!!.category,
+            initialPrice = editingItem!!.defaultPrice,
+            showCategoryField = true,
+            onSave = { name, category, price ->
+                repository.update(editingItem!!.id, category, name, price)
+                editingItem = null
+                showEditDialog = false
+                reloadKey++
+            },
+            onDismiss = {
+                editingItem = null
+                showEditDialog = false
+            }
+        )
+    }
+
+    if (showAddDialog) {
+        _PriceItemEditDialog(
+            title = "Добавить услугу",
+            initialName = "",
+            initialCategory = addingCategory,
+            initialPrice = 0,
+            showCategoryField = true,
+            onSave = { name, category, price ->
+                repository.create(category, name, price)
+                showAddDialog = false
+                reloadKey++
+            },
+            onDismiss = {
+                showAddDialog = false
+            }
+        )
     }
 }
 
@@ -722,17 +898,28 @@ private fun InvoiceItemRow(
 
 @Composable
 private fun PriceListSelectionDialog(
+    repository: PriceListRepository,
     onDismiss: () -> Unit,
     onSelect: (PriceListItem, Int) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("1") }
-    val filtered = remember(searchQuery) { PriceList.search(searchQuery) }
+    var allItems by remember { mutableStateOf<List<PriceListItem>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        allItems = repository.getAll()
+    }
+
+    val filtered = remember(searchQuery, allItems) {
+        if (searchQuery.isBlank()) allItems
+        else {
+            val q = searchQuery.lowercase()
+            allItems.filter { it.name.lowercase().contains(q) || it.category.lowercase().contains(q) }
+        }
+    }
     val grouped = remember(filtered) { filtered.groupBy { it.category } }
 
-    Dialog(
-        onDismissRequest = onDismiss
-    ) {
+    Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier.fillMaxWidth(0.6f).fillMaxHeight(0.8f),
             shape = MaterialTheme.shapes.large,
@@ -773,7 +960,6 @@ private fun PriceListSelectionDialog(
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(plItem.name, style = MaterialTheme.typography.bodyMedium)
-                                    Text(plItem.code ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Text(formatPrice(plItem.defaultPrice), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(8.dp))
@@ -788,6 +974,285 @@ private fun PriceListSelectionDialog(
             }
         }
     }
+}
+
+@Composable
+private fun VisitDiarySection(
+    visits: List<Visit>,
+    onAddVisit: () -> Unit,
+    onEditPositions: (Visit) -> Unit,
+    onDeleteVisit: (Visit) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Дневник посещений",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f)
+        )
+        IconButton(onClick = onAddVisit) {
+            Icon(Icons.Default.Add, contentDescription = "Добавить посещение")
+        }
+    }
+    if (visits.isEmpty()) {
+        Text(
+            text = "Нет посещений. Нажмите + чтобы добавить.",
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        visits.forEach { visit ->
+            val dateStr = formatVisitDate(visit.visitDate)
+            var expanded by remember { mutableStateOf(false) }
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                onClick = { expanded = !expanded }
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = dateStr,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { onEditPositions(visit) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Edit, contentDescription = "Выбрать позиции", modifier = Modifier.size(20.dp))
+                        }
+                        IconButton(onClick = { onDeleteVisit(visit) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = Color.Red, modifier = Modifier.size(20.dp))
+                        }
+                        Icon(
+                            if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = if (expanded) "Свернуть" else "Развернуть"
+                        )
+                    }
+                    if (expanded) {
+                        Spacer(Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(Modifier.height(8.dp))
+                        if (visit.positions.isEmpty()) {
+                            Text(
+                                text = "Позиции не выбраны",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                        } else {
+                            visit.positions.forEach { sel ->
+                                Row(modifier = Modifier.padding(vertical = 2.dp, horizontal = 4.dp)) {
+                                    Text("• ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                    val label = if (sel.toothNumbers.isNotBlank()) {
+                                        "${sel.position.name} — зуб(ы) ${sel.toothNumbers}"
+                                    } else {
+                                        sel.position.name
+                                    }
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        FilledTonalButton(
+                            onClick = { onEditPositions(visit) },
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(vertical = 4.dp)
+                        ) {
+                            Icon(Icons.Default.Checklist, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Выбрать позиции", fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddVisitDialog(
+    initialDateMillis: Long,
+    onDateChanged: (Long) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var dateText by remember(initialDateMillis) {
+        mutableStateOf(formatVisitDate(initialDateMillis))
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Добавить посещение") },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Дата посещения",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                OutlinedTextField(
+                    value = dateText,
+                    onValueChange = { dateText = it },
+                    placeholder = { Text("ДД.ММ.ГГГГ") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Дата") }
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Будет создано новое посещение. После создания вы сможете выбрать позиции.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text("Создать") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
+        }
+    )
+}
+
+@Composable
+private fun PositionSelectionDialog(
+    allPositions: List<Position>,
+    selectedPositionIds: Set<Long>,
+    positionToothNumbers: Map<Long, String>,
+    onTogglePosition: (Long) -> Unit,
+    onToothNumbersChanged: (Long, String) -> Unit,
+    onSave: () -> Unit,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(0.9f).fillMaxHeight(0.9f),
+            shape = MaterialTheme.shapes.large,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp
+        ) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Text(
+                    "Выбор позиций для посещения",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                HorizontalDivider()
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Зуб(ы)",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(72.dp)
+                    )
+                    Text(
+                        text = "Позиция",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                HorizontalDivider()
+
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(allPositions, key = { it.id }) { position ->
+                        val isChecked = position.id in selectedPositionIds
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = positionToothNumbers[position.id] ?: "",
+                                onValueChange = { onToothNumbersChanged(position.id, it) },
+                                modifier = Modifier.width(72.dp),
+                                singleLine = true,
+                                enabled = isChecked,
+                                placeholder = { Text("№", fontSize = 11.sp) },
+                                textStyle = MaterialTheme.typography.bodySmall
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Checkbox(
+                                checked = isChecked,
+                                onCheckedChange = { onTogglePosition(position.id) },
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Text(
+                                text = position.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(start = 80.dp))
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onReset,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Сбросить выбор")
+                    }
+                    Button(
+                        onClick = onSave,
+                        enabled = selectedPositionIds.isNotEmpty(),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Сохранить выбранные позиции")
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Отмена")
+                }
+            }
+        }
+    }
+}
+
+private fun formatVisitDate(millis: Long): String {
+    if (millis <= 0) return "Нет даты"
+    val instant = Instant.fromEpochMilliseconds(millis)
+    val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    val day = local.dayOfMonth.toString().padStart(2, '0')
+    val month = local.monthNumber.toString().padStart(2, '0')
+    val year = local.year
+    return "$day.$month.$year"
 }
 
 @Composable
@@ -817,7 +1282,87 @@ private fun TotalRow(
 }
 
 private fun formatPrice(amount: Long): String {
-    val units = amount / 100
+    val rubles = amount / 100
     val cents = amount % 100
-    return "$units.${if (cents < 10) "0" else ""}$cents"
+    return rubles.toString().reversed().chunked(3).joinToString(" ").reversed() + "." + (if (cents < 10) "0" else "") + cents
+}
+
+private fun _formatPrice(amount: Long): String {
+    val rubles = amount / 100
+    return rubles.toString().reversed().chunked(3).joinToString(" ").reversed()
+}
+
+private fun _formatPriceInput(amount: Long): String {
+    val rubles = amount / 100
+    return if (rubles == 0L) "" else rubles.toString()
+}
+
+private fun _parsePriceInput(text: String): Long {
+    val rubles = text.filter { it.isDigit() }.toLongOrNull() ?: return -1
+    return rubles * 100
+}
+
+@Composable
+private fun _PriceItemEditDialog(
+    title: String,
+    initialName: String,
+    initialCategory: String,
+    initialPrice: Long,
+    showCategoryField: Boolean,
+    onSave: (name: String, category: String, price: Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var category by remember { mutableStateOf(initialCategory) }
+    var priceText by remember { mutableStateOf(_formatPriceInput(initialPrice)) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Наименование услуги") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(Modifier.height(8.dp))
+                if (showCategoryField) {
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = { category = it },
+                        label = { Text("Категория") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                OutlinedTextField(
+                    value = priceText,
+                    onValueChange = { priceText = it.filter { c -> c.isDigit() } },
+                    label = { Text("Цена (руб)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    placeholder = { Text("1500") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val price = _parsePriceInput(priceText)
+                    if (name.isNotBlank() && category.isNotBlank() && price >= 0) {
+                        onSave(name.trim(), category.trim(), price)
+                    }
+                },
+                enabled = name.isNotBlank() && category.isNotBlank()
+            ) { Text("Сохранить") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Отмена") }
+        }
+    )
 }

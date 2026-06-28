@@ -1,0 +1,31 @@
+CREATE TABLE PriceListItemEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL,
+    name TEXT NOT NULL,
+    defaultPrice INTEGER NOT NULL,
+    sortOrder INTEGER NOT NULL DEFAULT 0
+);
+
+getAll:
+SELECT * FROM PriceListItemEntity ORDER BY sortOrder;
+
+getByCategory:
+SELECT * FROM PriceListItemEntity WHERE category = ? ORDER BY sortOrder;
+
+insert:
+INSERT INTO PriceListItemEntity(category, name, defaultPrice, sortOrder) VALUES (?, ?, ?, ?);
+
+updateItem:
+UPDATE PriceListItemEntity SET category = ?, name = ?, defaultPrice = ? WHERE id = ?;
+
+deleteItem:
+DELETE FROM PriceListItemEntity WHERE id = ?;
+
+getById:
+SELECT * FROM PriceListItemEntity WHERE id = ?;
+
+getLastInsertId:
+SELECT last_insert_rowid();
+
+count:
+SELECT COUNT(*) AS cnt FROM PriceListItemEntity;
