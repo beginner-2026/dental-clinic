@@ -11,7 +11,7 @@
 - **Android APK**: `gradlew :composeApp:assembleDebug` / `assembleRelease`
 - **Проверка компиляции (быстро)**: `./gradlew :composeApp:compileKotlinDesktop` — завершается сразу без открытия окна
 - **Запуск desktop в фоне** (не блокирует терминал): `Start-Process -FilePath ".\gradlew" -ArgumentList ":composeApp:run"` — окно живёт отдельно, закрывается крестиком
-- **Результат всех сборок копировать в `Builds/`** (создать, если нет)
+- **Результат всех сборок копировать в `Builds/`**
 
 ## Архитектура
 
