@@ -3,6 +3,7 @@ package com.dental.ui.patient
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -52,8 +53,11 @@ fun PatientDetailScreen(
     var isQuadrantView by remember { mutableStateOf(false) }
 
     var currentInvoice by remember { mutableStateOf<Invoice?>(null) }
+    var allInvoices by remember { mutableStateOf<List<Invoice>>(emptyList()) }
+    var showInvoiceEditor by remember { mutableStateOf(false) }
     var discountInput by remember { mutableStateOf("0") }
     var showPriceListDialog by remember { mutableStateOf(false) }
+    var showEditInvoiceDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     var diagnoses by remember { mutableStateOf<List<Diagnosis>>(emptyList()) }
@@ -97,7 +101,8 @@ fun PatientDetailScreen(
         loadTreatmentPlans()
         loadAllPositions()
         loadVisits()
-        val existing = invoiceRepository.getByPatient(patient.id)
+        allInvoices = invoiceRepository.getAllByPatient(patient.id)
+        val existing = allInvoices.firstOrNull()
         if (existing != null) {
             currentInvoice = existing
             discountInput = existing.discountPercent.toString()
@@ -109,6 +114,10 @@ fun PatientDetailScreen(
 
     fun updateInvoice(newInvoice: Invoice) {
         currentInvoice = newInvoice
+    }
+
+    fun loadAllInvoices() {
+        allInvoices = invoiceRepository.getAllByPatient(patient.id)
     }
 
     Scaffold(
@@ -129,13 +138,16 @@ fun PatientDetailScreen(
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("${patient.lastName} ${patient.firstName} ${patient.middleName ?: ""}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    if (patient.birthDate != null) {
-                        Text("Дата рождения: ${patient.birthDate}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (patient.phone != null) {
-                        Text("Телефон: ${patient.phone}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("${patient.lastName} ${patient.firstName} ${patient.middleName ?: ""}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        if (patient.phone != null) {
+                            Text(patient.phone, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                     if (patient.notes != null) {
                         Text("Заметки: ${patient.notes}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -159,13 +171,30 @@ fun PatientDetailScreen(
                         sections.forEach { section ->
                             val isExpanded = expandedSection == section
                             Card(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                                onClick = { expandedSection = if (isExpanded) "" else section }
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 0.dp),
+                                onClick = { expandedSection = if (isExpanded) "" else section },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isExpanded) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                    else MaterialTheme.colorScheme.surface
+                                )
                             ) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    if (section == "Зубная формула") {
+                                        Text("🦷", fontSize = 18.sp, modifier = Modifier.size(22.dp))
+                                    } else {
+                                        val icon = when (section) {
+                                            "Диагноз" -> Icons.Default.LocalHospital
+                                            "План лечения" -> Icons.Default.Checklist
+                                            "Дневник посещений" -> Icons.Default.DateRange
+                                            "Счёт" -> Icons.Default.MonetizationOn
+                                            else -> Icons.Default.Info
+                                        }
+                                        Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(Modifier.width(12.dp))
                                     Text(
                                         text = section,
                                         style = MaterialTheme.typography.titleMedium,
@@ -205,7 +234,7 @@ fun PatientDetailScreen(
                                             )
                                         }
                                         Box(
-                                            modifier = Modifier.fillMaxWidth().height(350.dp).padding(horizontal = 8.dp)
+                                            modifier = Modifier.fillMaxWidth().height(240.dp).padding(horizontal = 8.dp)
                                         ) {
                                             if (isQuadrantView) {
                                                 QuadrantOdontogram(
@@ -362,27 +391,37 @@ fun PatientDetailScreen(
                                         )
                                     }
                                     "Счёт" -> {
-                                        currentInvoice?.let { inv ->
-                                            InvoiceTabContent(
-                                                invoice = inv,
-                                                discountInput = discountInput,
-                                                onDiscountInputChange = { discountInput = it },
-                                                onInvoiceUpdate = { updateInvoice(it) },
-                                                onOpenPriceList = { showPriceListDialog = true },
-                                                onDeleteInvoiceClick = { showDeleteConfirm = true },
-                                                onSave = {
-                                                    val toSave = currentInvoice ?: return@InvoiceTabContent
-                                                    val savedId = invoiceRepository.save(InvoiceCalculator.recalculate(toSave))
-                                                    if (toSave.id == 0L) {
-                                                        val loaded = invoiceRepository.getByPatient(patient.id)
-                                                        if (loaded != null) {
-                                                            updateInvoice(loaded)
-                                                            discountInput = loaded.discountPercent.toString()
-                                                        } else {
-                                                            updateInvoice(toSave.copy(id = savedId))
-                                                        }
+                                        if (showInvoiceEditor) {
+                                            currentInvoice?.let { inv ->
+                                                InvoiceTabContent(
+                                                    invoice = inv,
+                                                    discountInput = discountInput,
+                                                    onDiscountInputChange = { discountInput = it },
+                                                    onInvoiceUpdate = { updateInvoice(it) },
+                                                    onOpenPriceList = { showPriceListDialog = true },
+                                                    onEditInvoice = { showEditInvoiceDialog = true },
+                                                    onDeleteInvoiceClick = { showDeleteConfirm = true },
+                                                    onSave = {
+                                                        val toSave = currentInvoice ?: return@InvoiceTabContent
+                                                        val savedId = invoiceRepository.save(InvoiceCalculator.recalculate(toSave))
+                                                        loadAllInvoices()
+                                                        val saved = allInvoices.firstOrNull { it.id == savedId }
+                                                        updateInvoice(saved ?: toSave.copy(id = savedId))
+                                                        showInvoiceEditor = false
                                                     }
-                                                }
+                                                )
+                                            }
+                                        } else {
+                                            InvoiceHistoryView(
+                                                key = allInvoices.size,
+                                                invoices = allInvoices,
+                                                onNewInvoice = {
+                                                    currentInvoice = Invoice(patientId = patient.id)
+                                                    discountInput = "0"
+                                                    showInvoiceEditor = true
+                                                    showPriceListDialog = true
+                                                },
+                                                onRefresh = { loadAllInvoices() }
                                             )
                                         }
                                     }
@@ -456,17 +495,42 @@ fun PatientDetailScreen(
         PriceListSelectionDialog(
             repository = priceListRepository,
             onDismiss = { showPriceListDialog = false },
-            onSelect = { plItem, qty ->
+            onSelect = { selections ->
                 currentInvoice?.let { inv ->
-                    val newItem = InvoiceItem(
-                        serviceName = plItem.name,
-                        quantity = qty,
-                        unitPrice = plItem.defaultPrice
-                    )
-                    val updated = InvoiceCalculator.recalculate(inv.copy(items = inv.items + newItem))
+                    val newItems = selections.map { (plItem, qty) ->
+                        InvoiceItem(
+                            serviceName = plItem.name,
+                            quantity = qty,
+                            unitPrice = plItem.defaultPrice
+                        )
+                    }
+                    val updated = InvoiceCalculator.recalculate(inv.copy(items = inv.items + newItems))
                     updateInvoice(updated)
                 }
                 showPriceListDialog = false
+            }
+        )
+    }
+
+    if (showEditInvoiceDialog) {
+        val currentItems = currentInvoice?.items ?: emptyList()
+        PriceListSelectionDialog(
+            repository = priceListRepository,
+            initialItems = currentItems.map { it.serviceName to it.quantity },
+            onDismiss = { showEditInvoiceDialog = false },
+            onSelect = { selections ->
+                currentInvoice?.let { inv ->
+                    val newItems = selections.map { (plItem, qty) ->
+                        InvoiceItem(
+                            serviceName = plItem.name,
+                            quantity = qty,
+                            unitPrice = plItem.defaultPrice
+                        )
+                    }
+                    val updated = InvoiceCalculator.recalculate(inv.copy(items = newItems))
+                    updateInvoice(updated)
+                }
+                showEditInvoiceDialog = false
             }
         )
     }
@@ -562,9 +626,16 @@ private fun InvoiceTabContent(
     onDiscountInputChange: (String) -> Unit,
     onInvoiceUpdate: (Invoice) -> Unit,
     onOpenPriceList: () -> Unit,
+    onEditInvoice: () -> Unit,
     onDeleteInvoiceClick: () -> Unit,
     onSave: () -> Unit
 ) {
+    var itemsExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(invoice.items.size) {
+        if (invoice.items.isNotEmpty()) itemsExpanded = true
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -581,6 +652,9 @@ private fun InvoiceTabContent(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            IconButton(onClick = onEditInvoice, enabled = invoice.items.isNotEmpty()) {
+                Icon(Icons.Default.Edit, contentDescription = "Редактировать счёт")
+            }
             IconButton(
                 onClick = onDeleteInvoiceClick,
                 enabled = invoice.id != 0L || invoice.items.isNotEmpty()
@@ -589,26 +663,38 @@ private fun InvoiceTabContent(
             }
         }
 
-        // === Status section ===
-        Text(
-            text = "Статус: ${if (invoice.id != 0L) "Счёт #${invoice.id}" else "Новый счёт"}" +
-                   "  |  Позиций: ${invoice.items.size}",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-        )
+        // === Status section (clickable) ===
+        val invoiceDate = if (invoice.dateCreated > 0) " от ${formatVisitDate(invoice.dateCreated)}" else ""
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .clickable(enabled = invoice.items.isNotEmpty()) { itemsExpanded = !itemsExpanded }
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (invoice.id != 0L) "Счёт №${invoice.id}$invoiceDate" else "Новый счёт",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "Позиций: ${invoice.items.size}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (invoice.items.isNotEmpty()) {
+                Icon(
+                    if (itemsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (itemsExpanded) "Свернуть" else "Развернуть",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
 
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
         // === Новый список section ===
-        if (invoice.items.isEmpty()) {
-            Text(
-                "Нет позиций. Нажмите «Выбрать из Прейскуранта» чтобы добавить услугу.",
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
+        if (itemsExpanded && invoice.items.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
@@ -630,6 +716,7 @@ private fun InvoiceTabContent(
                                 updated[index] = item.copy(quantity = qty)
                                 onInvoiceUpdate(InvoiceCalculator.recalculate(invoice.copy(items = updated)))
                             },
+                            onEdit = onEditInvoice,
                             onDelete = {
                                 val updated = invoice.items.toMutableList()
                                 updated.removeAt(index)
@@ -639,6 +726,13 @@ private fun InvoiceTabContent(
                     }
                 }
             }
+        } else if (invoice.items.isEmpty()) {
+            Text(
+                "Нет позиций. Нажмите «Выбрать из Прейскуранта» чтобы добавить услугу.",
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         Spacer(Modifier.height(8.dp))
@@ -695,6 +789,107 @@ private fun InvoiceTabContent(
         }
 
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun InvoiceHistoryView(
+    key: Int = 0,
+    invoices: List<Invoice>,
+    onNewInvoice: () -> Unit,
+    onRefresh: () -> Unit
+) {
+    var expandedId by remember { mutableStateOf<Long?>(null) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedButton(onClick = onNewInvoice) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Выбрать из Прейскуранта")
+            }
+            Spacer(Modifier.weight(1f))
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+        if (invoices.isEmpty()) {
+            Text(
+                "Нет сохранённых счетов. Нажмите «Выбрать из Прейскуранта» чтобы создать первый счёт.",
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            invoices.forEach { inv ->
+                val isExpanded = expandedId == inv.id
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                        .clickable { expandedId = if (isExpanded) null else inv.id },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    text = "Счёт №${inv.id} от ${formatVisitDate(inv.dateCreated)}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Позиций: ${inv.items.size}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (inv.items.isNotEmpty()) {
+                                Icon(
+                                    if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        if (isExpanded && inv.items.isNotEmpty()) {
+                            Spacer(Modifier.height(8.dp))
+                            HorizontalDivider()
+                            Spacer(Modifier.height(8.dp))
+                            inv.items.forEach { item ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(item.serviceName, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                    Text(
+                                        "${item.quantity} × ${formatPrice(item.unitPrice)} = ${formatPrice(item.lineTotal)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            HorizontalDivider()
+                            Spacer(Modifier.height(4.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                Text(
+                                    text = "Итого: ${formatPrice(inv.totalAfterDiscount)}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -846,51 +1041,51 @@ private fun PriceListTabContent(repository: PriceListRepository) {
 private fun InvoiceItemRow(
     item: InvoiceItem,
     onQuantityChange: (Int) -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
                 Text(
                     text = item.serviceName,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    fontWeight = FontWeight.Bold
                 )
-                IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = Color.Red, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = { if (item.quantity > 1) onQuantityChange(item.quantity - 1) },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Default.Remove, contentDescription = "Уменьшить", modifier = Modifier.size(16.dp))
+                    }
+                    Text("${item.quantity}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    IconButton(
+                        onClick = { onQuantityChange(item.quantity + 1) },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Увеличить", modifier = Modifier.size(16.dp))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "${formatPrice(item.unitPrice)} × ${item.quantity} = ${formatPrice(item.lineTotal)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-            Spacer(Modifier.height(4.dp))
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Кол-во:", style = MaterialTheme.typography.bodySmall)
-                Spacer(Modifier.width(4.dp))
-                OutlinedTextField(
-                    value = item.quantity.toString(),
-                    onValueChange = { text ->
-                        val qty = text.filter { it.isDigit() }.toIntOrNull() ?: 1
-                        onQuantityChange(qty)
-                    },
-                    modifier = Modifier.width(56.dp),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    textStyle = MaterialTheme.typography.bodySmall
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = "${formatPrice(item.unitPrice)} × ${item.quantity} = ",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = formatPrice(item.lineTotal),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+            IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = "Редактировать", modifier = Modifier.size(20.dp))
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = Color.Red, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -899,15 +1094,22 @@ private fun InvoiceItemRow(
 @Composable
 private fun PriceListSelectionDialog(
     repository: PriceListRepository,
+    initialItems: List<Pair<String, Int>> = emptyList(),
     onDismiss: () -> Unit,
-    onSelect: (PriceListItem, Int) -> Unit
+    onSelect: (List<Pair<PriceListItem, Int>>) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var quantity by remember { mutableStateOf("1") }
     var allItems by remember { mutableStateOf<List<PriceListItem>>(emptyList()) }
+    val selectedItems = remember { mutableStateMapOf<Long, Int>() }
 
     LaunchedEffect(Unit) {
         allItems = repository.getAll()
+        selectedItems.clear()
+        initialItems.forEach { (name, qty) ->
+            allItems.firstOrNull { it.name == name }?.let { plItem ->
+                selectedItems[plItem.id] = qty
+            }
+        }
     }
 
     val filtered = remember(searchQuery, allItems) {
@@ -927,22 +1129,8 @@ private fun PriceListSelectionDialog(
             shadowElevation = 8.dp
         ) {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-                    Text("Выбрать из прайс-листа", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                    TextButton(onClick = onDismiss) { Text("Готово") }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
-                    Text("Количество:", style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.width(8.dp))
-                    OutlinedTextField(
-                        value = quantity,
-                        onValueChange = { quantity = it.filter { c -> c.isDigit() }.let { if (it.isEmpty()) "1" else it } },
-                        modifier = Modifier.width(70.dp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        textStyle = MaterialTheme.typography.bodySmall
-                    )
-                }
+                Text("Выбрать из Прейскуранта", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
+
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -951,25 +1139,55 @@ private fun PriceListSelectionDialog(
                     singleLine = true
                 )
                 Spacer(Modifier.height(8.dp))
+
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     grouped.forEach { (category, group) ->
                         item(key = "header_$category") {
                             Text(category, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
                         }
                         items(group, key = { it.id }) { plItem ->
-                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            val qty = selectedItems[plItem.id] ?: 0
+                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = qty > 0,
+                                    onCheckedChange = { checked ->
+                                        selectedItems[plItem.id] = if (checked) 1 else 0
+                                    }
+                                )
                                 Column(Modifier.weight(1f)) {
                                     Text(plItem.name, style = MaterialTheme.typography.bodyMedium)
                                 }
                                 Text(formatPrice(plItem.defaultPrice), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(8.dp))
-                                FilledTonalButton(onClick = { onSelect(plItem, quantity.toIntOrNull() ?: 1) }, modifier = Modifier.height(32.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)) {
-                                    Text("+", fontSize = 14.sp)
+                                if (qty > 0) {
+                                    IconButton(onClick = { if (qty > 1) selectedItems[plItem.id] = qty - 1 }, modifier = Modifier.size(28.dp)) {
+                                        Icon(Icons.Default.Remove, contentDescription = "Уменьшить", modifier = Modifier.size(18.dp))
+                                    }
+                                    Text("$qty", style = MaterialTheme.typography.bodyMedium)
+                                    IconButton(onClick = { selectedItems[plItem.id] = qty + 1 }, modifier = Modifier.size(28.dp)) {
+                                        Icon(Icons.Default.Add, contentDescription = "Увеличить", modifier = Modifier.size(18.dp))
+                                    }
+                                } else {
+                                    Spacer(Modifier.width(72.dp))
                                 }
                             }
                             HorizontalDivider()
                         }
                     }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Отмена") }
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        val selections = selectedItems.entries
+                            .filter { it.value > 0 }
+                            .mapNotNull { entry ->
+                                allItems.find { it.id == entry.key }?.let { it to entry.value }
+                            }
+                        onSelect(selections)
+                    }) { Text("Готово") }
                 }
             }
         }

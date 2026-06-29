@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.dental.data.AppointmentRepository
@@ -75,7 +76,13 @@ fun App(driverFactory: DatabaseDriverFactory) {
                     HorizontalDivider()
 
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                        icon = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(-4.dp))
+                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
+                        },
                         label = { Text("Пациенты") },
                         selected = currentScreen == AppScreen.PATIENTS,
                         onClick = {
