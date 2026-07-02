@@ -24,6 +24,9 @@ DELETE FROM PriceListItemEntity WHERE id = ?;
 getById:
 SELECT * FROM PriceListItemEntity WHERE id = ?;
 
+deleteAll:
+DELETE FROM PriceListItemEntity;
+
 getLastInsertId:
 SELECT last_insert_rowid();
 

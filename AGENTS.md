@@ -22,7 +22,7 @@
 - **Навигация**: ручная, `enum AppScreen` в `App.kt` (без библиотек)
 - **UI**: Material 3, только светлая тема, весь текст на русском (без i18n)
 - **Состояние**: `MutableStateFlow`/`StateFlow` в ViewModel
-- **Expect/actual**: `DatabaseDriverFactory` (2 реализации) и `getPlatformName()`
+- **Expect/actual**: `DatabaseDriverFactory`, `getPlatformName()`, `BackupStorage`, `platformStartSyncServer`
 
 ## База данных (SQLDelight)
 
@@ -42,6 +42,27 @@
 - `CrownOptionColors` и `RootOptionColors` — `public`, используются из `MedicalHistoryScreen.kt`
 - При изменении формы зуба менять `drawUpperMolar()` / `drawUpperPremolar()` и соответствующий кейс в `drawCrownSelection()`
 - При изменении корней править `drawEnhancedRoots()` и `drawRoot()`
+
+## Синхронизация и резервное копирование
+
+- **BackupManager** (`commonMain`): экспорт всех таблиц БД в `BackupData` (JSON) и импорт обратно
+- **BackupStorage** (expect/actual): сохранение/загрузка JSON-файла на устройстве
+  - Desktop: `~/.dental-clinic/backups/backup_<timestamp>.json`
+  - Android: `context.filesDir/backups/backup_<timestamp>.json`
+- **SyncServer** (`desktopMain`): Ktor Netty-сервер на порту 9876, эндпоинты:
+  - `GET /api/sync/ping` — проверка доступности
+  - `POST /api/sync/pull` — получить все данные с сервера
+  - `POST /api/sync/push` — отправить данные на сервер
+- **SyncClient** (`commonMain`): Ktor-клиент для подключения к SyncServer
+- **platformStartSyncServer** (expect/actual): автоматический запуск сервера на Desktop (Android — no-op)
+- **Экран Settings**: создание/восстановление бэкапа (JSON), Push/Pull синхронизация с сервером
+
+## Зависимости (новые)
+
+- `kotlinx-serialization-json` — сериализация/десериализация BackupData
+- `ktor-client-core`, `ktor-client-okhttp` (Android), `ktor-client-java` (Desktop) — HTTP-клиент
+- `ktor-server-core`, `ktor-server-netty`, `ktor-server-status-pages`, `ktor-server-content-negotiation` (Desktop) — HTTP-сервер
+- `ktor-client-content-negotiation`, `ktor-serialization-kotlinx-json` — JSON через Content Negotiation
 
 ## Тесты / CI
 

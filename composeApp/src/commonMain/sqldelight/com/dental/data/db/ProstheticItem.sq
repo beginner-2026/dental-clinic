@@ -24,3 +24,9 @@ DELETE FROM ProstheticItemEntity WHERE id = ?;
 
 deleteByPatientId:
 DELETE FROM ProstheticItemEntity WHERE patientId = ?;
+
+getAll:
+SELECT * FROM ProstheticItemEntity;
+
+deleteAll:
+DELETE FROM ProstheticItemEntity;

@@ -17,5 +17,11 @@ VALUES (?, ?, ?, ?, ?);
 deleteByPatientId:
 DELETE FROM DiagnosisEntity WHERE patientId = ?;
 
+getAll:
+SELECT * FROM DiagnosisEntity;
+
+deleteAll:
+DELETE FROM DiagnosisEntity;
+
 getLastInsertId:
 SELECT last_insert_rowid();

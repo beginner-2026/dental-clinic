@@ -28,3 +28,9 @@ UPDATE ToothEntity SET status = ? WHERE patientId = ? AND number = ?;
 
 deleteByPatientId:
 DELETE FROM ToothEntity WHERE patientId = ?;
+
+getAll:
+SELECT * FROM ToothEntity;
+
+deleteAll:
+DELETE FROM ToothEntity;

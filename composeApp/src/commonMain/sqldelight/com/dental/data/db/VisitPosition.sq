@@ -63,6 +63,21 @@ DELETE FROM VisitPositionEntity WHERE visitId = ?;
 getLastInsertId:
 SELECT last_insert_rowid();
 
+getAllVisits:
+SELECT * FROM VisitEntity;
+
+getAllVisitPositions:
+SELECT * FROM VisitPositionEntity;
+
+deleteAllPositions:
+DELETE FROM PositionEntity;
+
+deleteAllVisits:
+DELETE FROM VisitEntity;
+
+deleteAllVisitPositions:
+DELETE FROM VisitPositionEntity;
+
 positionExists:
 SELECT COUNT(*) AS cnt FROM PositionEntity;
 

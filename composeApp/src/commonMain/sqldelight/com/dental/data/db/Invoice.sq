@@ -54,5 +54,17 @@ UPDATE InvoiceEntity SET dateUpdated = ?, status = ?, discountPercent = ?, total
 getLastInsertId:
 SELECT last_insert_rowid();
 
+getAllInvoices:
+SELECT * FROM InvoiceEntity;
+
+getAllInvoiceItems:
+SELECT * FROM InvoiceItemEntity;
+
+deleteAllItems:
+DELETE FROM InvoiceItemEntity;
+
+deleteAllInvoices:
+DELETE FROM InvoiceEntity;
+
 deleteInvoice:
 DELETE FROM InvoiceEntity WHERE id = ?;

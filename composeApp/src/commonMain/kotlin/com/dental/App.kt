@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,18 +21,25 @@ import com.dental.data.PriceListRepository
 import com.dental.data.TreatmentPlanRepository
 import com.dental.data.VisitPositionRepository
 import com.dental.data.db.DentalDatabase
+import com.dental.data.sync.BackupManager
+import com.dental.data.sync.platformStartSyncServer
 import com.dental.model.*
 import com.dental.ui.navigation.AppScreen
 import com.dental.ui.odontogram.OdontogramViewModel
 import com.dental.ui.patient.PatientDetailScreen
 import com.dental.ui.patient.PatientScreen
 import com.dental.ui.pricelist.PriceListScreen
+import com.dental.ui.settings.SettingsScreen
 import com.dental.ui.theme.DentalTheme
 
 @Composable
-fun App(driverFactory: DatabaseDriverFactory) {
+fun App(
+    driverFactory: DatabaseDriverFactory
+) {
     val driver = remember { driverFactory.createDriver() }
     val database = remember { DentalDatabase(driver) }
+    val backupManager = remember { BackupManager(database) }
+    val syncServerAddress = remember { platformStartSyncServer(backupManager) }
     val appointmentRepo = remember { AppointmentRepository(database) }
     val patientRepo = remember { PatientRepository(database) }
     val toothRepo = remember { ToothRepository(database) }
@@ -98,34 +106,53 @@ fun App(driverFactory: DatabaseDriverFactory) {
                             currentScreen = AppScreen.PRICE_LIST
                         }
                     )
+                    HorizontalDivider()
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                        label = { Text("Настройки") },
+                        selected = currentScreen == AppScreen.SETTINGS,
+                        onClick = {
+                            currentScreen = AppScreen.SETTINGS
+                        }
+                    )
                 }
             }
         ) {
-            val currentPatient = selectedPatient
-            if (currentPatient != null) {
-                PatientDetailScreen(
-                    patient = currentPatient,
-                    odontogramViewModel = odontogramViewModel,
-                    invoiceRepository = invoiceRepo,
-                    diagnosisRepository = diagnosisRepo,
-                    treatmentPlanRepository = treatmentPlanRepo,
-                    visitPositionRepository = visitPositionRepo,
-                    priceListRepository = priceListRepo,
-                    onBack = { selectedPatient = null }
+            when (currentScreen) {
+                AppScreen.SETTINGS -> SettingsScreen(
+                    backupManager = backupManager,
+                    defaultAddress = syncServerAddress ?: "http://localhost:9876",
+                    onBack = { currentScreen = AppScreen.PATIENTS }
                 )
-            } else {
-                when (currentScreen) {
-                    AppScreen.PATIENTS -> PatientScreen(
-                        patients = patients,
-                        onAddPatient = { showAddPatientDialog = true },
-                        onDeletePatient = { id ->
-                            patientRepo.delete(id)
-                            reloadPatients()
-                        },
-                        onReload = { reloadPatients() },
-                        onPatientClick = { selectedPatient = it }
-                    )
-                    AppScreen.PRICE_LIST -> PriceListScreen(priceListRepo)
+                else -> {
+                    val currentPatient = selectedPatient
+                    if (currentPatient != null) {
+                        PatientDetailScreen(
+                            patient = currentPatient,
+                            odontogramViewModel = odontogramViewModel,
+                            invoiceRepository = invoiceRepo,
+                            diagnosisRepository = diagnosisRepo,
+                            treatmentPlanRepository = treatmentPlanRepo,
+                            visitPositionRepository = visitPositionRepo,
+                            priceListRepository = priceListRepo,
+                            onBack = { selectedPatient = null }
+                        )
+                    } else {
+                        when (currentScreen) {
+                            AppScreen.PATIENTS -> PatientScreen(
+                                patients = patients,
+                                onAddPatient = { showAddPatientDialog = true },
+                                onDeletePatient = { id ->
+                                    patientRepo.delete(id)
+                                    reloadPatients()
+                                },
+                                onReload = { reloadPatients() },
+                                onPatientClick = { selectedPatient = it }
+                            )
+                            AppScreen.PRICE_LIST -> PriceListScreen(priceListRepo)
+                            AppScreen.SETTINGS -> { /* handled above */ }
+                        }
+                    }
                 }
             }
         }

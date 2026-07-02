@@ -15,6 +15,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -35,6 +41,31 @@ import com.dental.ui.odontogram.OdontogramViewModel
 import com.dental.ui.odontogram.QuadrantOdontogram
 import com.dental.ui.odontogram.ToothActionSheet
 import com.dental.ui.odontogram.ToothPartSheet
+
+private class ToothPainter : Painter() {
+    override val intrinsicSize: Size get() = Size(24f, 24f)
+
+    override fun DrawScope.onDraw() {
+        val w = size.width
+        val h = size.height
+        val path = Path().apply {
+            moveTo(w * 0.25f, h * 0.45f)
+            lineTo(w * 0.25f, h * 0.2f)
+            cubicTo(w * 0.25f, h * 0.05f,
+                w * 0.75f, h * 0.05f,
+                w * 0.75f, h * 0.2f)
+            lineTo(w * 0.75f, h * 0.45f)
+            lineTo(w * 0.6f, h * 0.45f)
+            lineTo(w * 0.6f, h * 0.85f)
+            cubicTo(w * 0.6f, h * 0.95f,
+                w * 0.4f, h * 0.95f,
+                w * 0.4f, h * 0.85f)
+            lineTo(w * 0.4f, h * 0.45f)
+            close()
+        }
+        drawPath(path, color = Color.Black, style = Stroke(width = 2f))
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -163,7 +194,7 @@ fun PatientDetailScreen(
             when (tabIndex) {
                 0 -> {
                     val sections = listOf("Зубная формула", "Диагноз", "План лечения", "Дневник посещений", "Счёт")
-                    var expandedSection by remember { mutableStateOf("Зубная формула") }
+                    var expandedSection by remember { mutableStateOf("") }
 
                     Column(
                         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
@@ -183,7 +214,12 @@ fun PatientDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     if (section == "Зубная формула") {
-                                        Text("🦷", fontSize = 18.sp, modifier = Modifier.size(22.dp))
+                                        Icon(
+                                            painter = ToothPainter(),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(22.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
                                     } else {
                                         val icon = when (section) {
                                             "Диагноз" -> Icons.Default.LocalHospital

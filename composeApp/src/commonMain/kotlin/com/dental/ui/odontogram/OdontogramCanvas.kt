@@ -682,7 +682,7 @@ private fun crownDimensions(w: Float, crownH: Float, toothType: ToothType, numbe
             if (toothType == ToothType.LOWER_PREMOLAR)
                 CrownDims(w * 0.88f, w * 0.70f, w * 0.84f, w * 0.38f)
             else
-                CrownDims(w * 0.74f, w * 0.50f, w * 0.66f, w * 0.38f)
+                CrownDims(w * 0.88f, w * 0.72f, w * 0.84f, w * 0.50f)
         }
         ToothType.UPPER_ANTERIOR, ToothType.LOWER_ANTERIOR -> {
             when {

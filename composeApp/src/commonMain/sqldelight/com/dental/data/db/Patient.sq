@@ -32,3 +32,6 @@ SELECT last_insert_rowid();
 
 deleteById:
 DELETE FROM PatientEntity WHERE id = ?;
+
+deleteAll:
+DELETE FROM PatientEntity;
