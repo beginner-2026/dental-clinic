@@ -9,10 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dental.data.sync.BackupManager
 import com.dental.data.sync.BackupStorage
-import com.dental.data.sync.SyncClient
+import com.dental.data.sync.CloudSyncStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -20,13 +21,17 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SettingsScreen(
     backupManager: BackupManager,
-    defaultAddress: String = "http://localhost:9876",
+    cloudSyncStorage: CloudSyncStorage,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    var syncServerAddress by remember { mutableStateOf(defaultAddress) }
     var statusMessage by remember { mutableStateOf("") }
-    var syncStatus by remember { mutableStateOf("") }
+    var syncStatus by remember { mutableStateOf(cloudSyncStorage.statusText()) }
+
+    val pickFile = rememberSyncFilePickerLauncher { path ->
+        cloudSyncStorage.configure(path)
+        syncStatus = cloudSyncStorage.statusText()
+    }
 
     fun showStatus(msg: String) {
         statusMessage = msg
@@ -60,10 +65,10 @@ fun SettingsScreen(
                         try {
                             val json = backupManager.exportToJson()
                             val ok = withContext(Dispatchers.IO) { BackupStorage.save(json) }
-                            if (ok) showStatus("✅ Бэкап сохранён на устройстве")
-                            else showStatus("❌ Ошибка сохранения бэкапа")
+                            if (ok) showStatus("Бэкап сохранён на устройстве")
+                            else showStatus("Ошибка сохранения бэкапа")
                         } catch (e: Exception) {
-                            showStatus("❌ ${e.message}")
+                            showStatus("${e.message}")
                         }
                     }
                 },
@@ -81,12 +86,12 @@ fun SettingsScreen(
                             val json = withContext(Dispatchers.IO) { BackupStorage.load() }
                             if (json != null) {
                                 backupManager.importFromJson(json)
-                                showStatus("✅ Бэкап восстановлен")
+                                showStatus("Бэкап восстановлен")
                             } else {
-                                showStatus("❌ Нет сохранённого бэкапа")
+                                showStatus("Нет сохранённого бэкапа")
                             }
                         } catch (e: Exception) {
-                            showStatus("❌ ${e.message}")
+                            showStatus("${e.message}")
                         }
                     }
                 },
@@ -99,16 +104,31 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Text("Синхронизация по сети", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Синхронизация с облаком", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
-            OutlinedTextField(
-                value = syncServerAddress,
-                onValueChange = { syncServerAddress = it },
-                label = { Text("Адрес сервера (ПК)") },
-                placeholder = { Text("http://192.168.1.100:9876") },
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                tonalElevation = 1.dp
+            ) {
+                Text(
+                    text = syncStatus,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Button(
+                onClick = { pickFile() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.FolderOpen, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Выбрать файл синхронизации")
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -118,50 +138,45 @@ fun SettingsScreen(
                     onClick = {
                         scope.launch {
                             try {
-                                val client = SyncClient(syncServerAddress.trimEnd('/'))
-                                val ok = withContext(Dispatchers.IO) { client.ping() }
-                                if (ok) {
-                                    showStatus("✅ Сервер доступен")
-                                    val remoteData = withContext(Dispatchers.IO) { client.pull() }
-                                    backupManager.importFromData(remoteData)
-                                    showStatus("✅ Данные получены с сервера")
-                                } else {
-                                    showStatus("❌ Сервер недоступен")
-                                }
-                                client.close()
+                                val json = backupManager.exportToJson()
+                                val ok = withContext(Dispatchers.IO) { cloudSyncStorage.save(json) }
+                                if (ok) showStatus("Данные отправлены в облако")
+                                else showStatus("Ошибка отправки в облако")
                             } catch (e: Exception) {
-                                showStatus("❌ ${e.message}")
+                                showStatus("${e.message}")
                             }
                         }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = cloudSyncStorage.isConfigured
                 ) {
-                    Text("Загрузить с сервера (Pull)")
+                    Icon(Icons.Default.CloudUpload, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Отправить в облако")
                 }
 
                 Button(
                     onClick = {
                         scope.launch {
                             try {
-                                val client = SyncClient(syncServerAddress.trimEnd('/'))
-                                val ok = withContext(Dispatchers.IO) { client.ping() }
-                                if (ok) {
-                                    val data = backupManager.exportAll()
-                                    val result = withContext(Dispatchers.IO) { client.push(data) }
-                                    if (result.success) showStatus("✅ Данные отправлены на сервер")
-                                    else showStatus("❌ ${result.message}")
+                                val json = withContext(Dispatchers.IO) { cloudSyncStorage.load() }
+                                if (json != null) {
+                                    backupManager.importFromJson(json)
+                                    showStatus("Данные загружены из облака")
                                 } else {
-                                    showStatus("❌ Сервер недоступен")
+                                    showStatus("В облаке нет данных")
                                 }
-                                client.close()
                             } catch (e: Exception) {
-                                showStatus("❌ ${e.message}")
+                                showStatus("${e.message}")
                             }
                         }
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = cloudSyncStorage.isConfigured
                 ) {
-                    Text("Отправить на сервер (Push)")
+                    Icon(Icons.Default.CloudDownload, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Загрузить из облака")
                 }
             }
 
@@ -169,8 +184,7 @@ fun SettingsScreen(
                 Text(
                     text = statusMessage,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (statusMessage.startsWith("✅")) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

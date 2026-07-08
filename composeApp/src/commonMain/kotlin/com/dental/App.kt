@@ -22,7 +22,7 @@ import com.dental.data.TreatmentPlanRepository
 import com.dental.data.VisitPositionRepository
 import com.dental.data.db.DentalDatabase
 import com.dental.data.sync.BackupManager
-import com.dental.data.sync.platformStartSyncServer
+import com.dental.data.sync.CloudSyncStorage
 import com.dental.model.*
 import com.dental.ui.navigation.AppScreen
 import com.dental.ui.odontogram.OdontogramViewModel
@@ -39,7 +39,7 @@ fun App(
     val driver = remember { driverFactory.createDriver() }
     val database = remember { DentalDatabase(driver) }
     val backupManager = remember { BackupManager(database) }
-    val syncServerAddress = remember { platformStartSyncServer(backupManager) }
+    val cloudSyncStorage = remember { CloudSyncStorage() }
     val appointmentRepo = remember { AppointmentRepository(database) }
     val patientRepo = remember { PatientRepository(database) }
     val toothRepo = remember { ToothRepository(database) }
@@ -121,7 +121,7 @@ fun App(
             when (currentScreen) {
                 AppScreen.SETTINGS -> SettingsScreen(
                     backupManager = backupManager,
-                    defaultAddress = syncServerAddress ?: "http://localhost:9876",
+                    cloudSyncStorage = cloudSyncStorage,
                     onBack = { currentScreen = AppScreen.PATIENTS }
                 )
                 else -> {
