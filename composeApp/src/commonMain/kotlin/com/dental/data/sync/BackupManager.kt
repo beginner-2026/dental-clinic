@@ -35,7 +35,8 @@ class BackupManager(private val database: DentalDatabase) {
             BackupTooth(
                 id = e.id, patientId = e.patientId, number = e.number.toInt(),
                 arch = e.arch, quadrant = e.quadrant.toInt(), status = e.status,
-                examType = e.examType, crownOption = e.crownOption
+                examType = e.examType, crownOption = e.crownOption,
+                rootOption = e.rootOption
             )
         }
 
@@ -127,73 +128,76 @@ class BackupManager(private val database: DentalDatabase) {
             clearAllData()
 
             data.positions.forEach { p ->
-                queries.visitPositionQueries.insertPosition(name = p.name, sortOrder = p.sortOrder)
+                queries.visitPositionQueries.insertPositionWithId(
+                    id = p.id, name = p.name, sortOrder = p.sortOrder
+                )
             }
             data.priceListItems.forEach { p ->
-                queries.priceListQueries.insert(
-                    category = p.category, name = p.name,
+                queries.priceListQueries.insertWithId(
+                    id = p.id, category = p.category, name = p.name,
                     defaultPrice = p.defaultPrice, sortOrder = p.sortOrder
                 )
             }
             data.patients.forEach { p ->
-                queries.patientQueries.insert(
-                    lastName = p.lastName, firstName = p.firstName,
+                queries.patientQueries.insertWithId(
+                    id = p.id, lastName = p.lastName, firstName = p.firstName,
                     middleName = p.middleName, birthDate = p.birthDate,
                     phone = p.phone, email = p.email, sex = p.sex,
                     notes = p.notes, createdAt = p.createdAt, updatedAt = p.updatedAt
                 )
             }
             data.appointments.forEach { a ->
-                queries.appointmentQueries.insert(
-                    patientId = a.patientId, startTime = a.startTime,
+                queries.appointmentQueries.insertWithId(
+                    id = a.id, patientId = a.patientId, startTime = a.startTime,
                     endTime = a.endTime, durationMinutes = a.durationMinutes,
                     doctorId = a.doctorId, chairId = a.chairId,
                     type = a.type, status = a.status, note = a.note
                 )
             }
             data.teeth.forEach { t ->
-                queries.toothQueries.insert(
-                    patientId = t.patientId, number = t.number.toLong(),
+                queries.toothQueries.upsert(
+                    id = t.id, patientId = t.patientId, number = t.number.toLong(),
                     arch = t.arch, quadrant = t.quadrant.toLong(),
-                    status = t.status, examType = t.examType, crownOption = t.crownOption
+                    status = t.status, examType = t.examType,
+                    crownOption = t.crownOption, rootOption = t.rootOption
                 )
             }
             data.prostheticItems.forEach { p ->
-                queries.prostheticItemQueries.insert(
-                    patientId = p.patientId, toothIds = p.toothIds,
+                queries.prostheticItemQueries.insertWithId(
+                    id = p.id, patientId = p.patientId, toothIds = p.toothIds,
                     type = p.type, material = p.material, stage = p.stage,
                     createdAt = p.createdAt, updatedAt = p.updatedAt
                 )
             }
             data.diagnoses.forEach { d ->
-                queries.diagnosisQueries.insert(
-                    patientId = d.patientId, code = d.code,
+                queries.diagnosisQueries.insertWithId(
+                    id = d.id, patientId = d.patientId, code = d.code,
                     diagnosisText = d.diagnosisText, toothNumber = d.toothNumber,
                     createdAt = d.createdAt
                 )
             }
             data.treatmentPlans.forEach { t ->
-                queries.treatmentPlanQueries.insert(
-                    patientId = t.patientId, toothNumbers = t.toothNumbers,
+                queries.treatmentPlanQueries.insertWithId(
+                    id = t.id, patientId = t.patientId, toothNumbers = t.toothNumbers,
                     procedure = t.procedure, createdAt = t.createdAt
                 )
             }
             data.visits.forEach { v ->
-                queries.visitPositionQueries.insertVisit(
-                    patientId = v.patientId, visitDate = v.visitDate,
+                queries.visitPositionQueries.insertVisitWithId(
+                    id = v.id, patientId = v.patientId, visitDate = v.visitDate,
                     createdAt = v.createdAt
                 )
             }
             data.visitPositions.forEach { vp ->
-                queries.visitPositionQueries.insertVisitPosition(
-                    visitId = vp.visitId, positionId = vp.positionId,
+                queries.visitPositionQueries.insertVisitPositionWithId(
+                    id = vp.id, visitId = vp.visitId, positionId = vp.positionId,
                     toothNumbers = vp.toothNumbers, selectedAt = vp.selectedAt,
                     sortOrder = vp.sortOrder
                 )
             }
             data.invoices.forEach { inv ->
-                queries.invoiceQueries.insertInvoice(
-                    patientId = inv.patientId, title = inv.title,
+                queries.invoiceQueries.insertInvoiceWithId(
+                    id = inv.id, patientId = inv.patientId, title = inv.title,
                     dateCreated = inv.dateCreated, dateUpdated = inv.dateUpdated,
                     status = inv.status, discountPercent = inv.discountPercent,
                     totalBeforeDiscount = inv.totalBeforeDiscount,
@@ -202,8 +206,8 @@ class BackupManager(private val database: DentalDatabase) {
                 )
             }
             data.invoiceItems.forEach { item ->
-                queries.invoiceQueries.insertInvoiceItem(
-                    invoiceId = item.invoiceId, serviceName = item.serviceName,
+                queries.invoiceQueries.insertInvoiceItemWithId(
+                    id = item.id, invoiceId = item.invoiceId, serviceName = item.serviceName,
                     serviceCode = item.serviceCode, quantity = item.quantity,
                     unitPrice = item.unitPrice, lineTotal = item.lineTotal
                 )

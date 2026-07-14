@@ -27,6 +27,10 @@ insert:
 INSERT INTO PatientEntity(lastName, firstName, middleName, birthDate, phone, email, sex, notes, createdAt, updatedAt)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+insertWithId:
+INSERT OR REPLACE INTO PatientEntity(id, lastName, firstName, middleName, birthDate, phone, email, sex, notes, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
 getLastInsertId:
 SELECT last_insert_rowid();
 

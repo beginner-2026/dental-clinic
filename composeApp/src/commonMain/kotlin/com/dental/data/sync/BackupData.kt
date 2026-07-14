@@ -57,7 +57,8 @@ data class BackupTooth(
     val quadrant: Int,
     val status: String,
     val examType: String? = null,
-    val crownOption: String? = null
+    val crownOption: String? = null,
+    val rootOption: String? = null
 )
 
 @Serializable

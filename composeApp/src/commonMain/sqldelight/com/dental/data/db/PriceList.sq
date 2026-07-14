@@ -15,6 +15,9 @@ SELECT * FROM PriceListItemEntity WHERE category = ? ORDER BY sortOrder;
 insert:
 INSERT INTO PriceListItemEntity(category, name, defaultPrice, sortOrder) VALUES (?, ?, ?, ?);
 
+insertWithId:
+INSERT OR REPLACE INTO PriceListItemEntity(id, category, name, defaultPrice, sortOrder) VALUES (?, ?, ?, ?, ?);
+
 updateItem:
 UPDATE PriceListItemEntity SET category = ?, name = ?, defaultPrice = ? WHERE id = ?;
 

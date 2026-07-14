@@ -19,6 +19,10 @@ insert:
 INSERT INTO ProstheticItemEntity(patientId, toothIds, type, material, stage, createdAt, updatedAt)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
+insertWithId:
+INSERT OR REPLACE INTO ProstheticItemEntity(id, patientId, toothIds, type, material, stage, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
 deleteById:
 DELETE FROM ProstheticItemEntity WHERE id = ?;
 

@@ -30,6 +30,9 @@ SELECT * FROM PositionEntity ORDER BY sortOrder;
 insertPosition:
 INSERT INTO PositionEntity(name, sortOrder) VALUES (?, ?);
 
+insertPositionWithId:
+INSERT OR REPLACE INTO PositionEntity(id, name, sortOrder) VALUES (?, ?, ?);
+
 getVisitsByPatientId:
 SELECT * FROM VisitEntity WHERE patientId = ? ORDER BY visitDate DESC;
 
@@ -38,6 +41,9 @@ SELECT * FROM VisitEntity WHERE id = ?;
 
 insertVisit:
 INSERT INTO VisitEntity(patientId, visitDate, createdAt) VALUES (?, ?, ?);
+
+insertVisitWithId:
+INSERT OR REPLACE INTO VisitEntity(id, patientId, visitDate, createdAt) VALUES (?, ?, ?, ?);
 
 deleteVisit:
 DELETE FROM VisitEntity WHERE id = ?;
@@ -56,6 +62,9 @@ ORDER BY vp.sortOrder;
 
 insertVisitPosition:
 INSERT INTO VisitPositionEntity(visitId, positionId, toothNumbers, selectedAt, sortOrder) VALUES (?, ?, ?, ?, ?);
+
+insertVisitPositionWithId:
+INSERT OR REPLACE INTO VisitPositionEntity(id, visitId, positionId, toothNumbers, selectedAt, sortOrder) VALUES (?, ?, ?, ?, ?, ?);
 
 deleteVisitPositionsByVisitId:
 DELETE FROM VisitPositionEntity WHERE visitId = ?;

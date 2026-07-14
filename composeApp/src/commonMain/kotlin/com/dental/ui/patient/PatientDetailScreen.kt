@@ -298,6 +298,22 @@ fun PatientDetailScreen(
                                                 )
                                             }
                                         }
+                                        Spacer(Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            Button(
+                                                onClick = {
+                                                    odontogramViewModel.saveAll()
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
+                                            ) {
+                                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                                                Spacer(Modifier.width(6.dp))
+                                                Text("Сохранить зубную формулу")
+                                            }
+                                        }
                                     }
                                     "Диагноз" -> {
                                         Row(

@@ -28,6 +28,10 @@ insert:
 INSERT INTO AppointmentEntity(patientId, startTime, endTime, durationMinutes, doctorId, chairId, type, status, note)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+insertWithId:
+INSERT OR REPLACE INTO AppointmentEntity(id, patientId, startTime, endTime, durationMinutes, doctorId, chairId, type, status, note)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
 updateStatus:
 UPDATE AppointmentEntity SET status = ? WHERE id = ?;
 

@@ -6,7 +6,8 @@ CREATE TABLE ToothEntity (
     quadrant INTEGER NOT NULL,
     status TEXT NOT NULL DEFAULT 'PRESENT',
     examType TEXT,
-    crownOption TEXT
+    crownOption TEXT,
+    rootOption TEXT
 );
 
 getByPatientId:
@@ -16,15 +17,21 @@ getByPatientIdAndExamType:
 SELECT * FROM ToothEntity WHERE patientId = ? AND examType = ?;
 
 upsert:
-INSERT OR REPLACE INTO ToothEntity(id, patientId, number, arch, quadrant, status, examType, crownOption)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO ToothEntity(id, patientId, number, arch, quadrant, status, examType, crownOption, rootOption)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insert:
-INSERT INTO ToothEntity(patientId, number, arch, quadrant, status, examType, crownOption)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO ToothEntity(patientId, number, arch, quadrant, status, examType, crownOption, rootOption)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 updateStatus:
 UPDATE ToothEntity SET status = ? WHERE patientId = ? AND number = ?;
+
+updateCrownOption:
+UPDATE ToothEntity SET crownOption = ? WHERE patientId = ? AND number = ?;
+
+updateRootOption:
+UPDATE ToothEntity SET rootOption = ? WHERE patientId = ? AND number = ?;
 
 deleteByPatientId:
 DELETE FROM ToothEntity WHERE patientId = ?;

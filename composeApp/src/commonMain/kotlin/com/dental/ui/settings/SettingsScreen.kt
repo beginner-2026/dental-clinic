@@ -11,22 +11,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.dental.data.sync.BackupData
 import com.dental.data.sync.BackupManager
 import com.dental.data.sync.BackupStorage
 import com.dental.data.sync.CloudSyncStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 
 @Composable
 fun SettingsScreen(
     backupManager: BackupManager,
     cloudSyncStorage: CloudSyncStorage,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onDataReloaded: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     var statusMessage by remember { mutableStateOf("") }
     var syncStatus by remember { mutableStateOf(cloudSyncStorage.statusText()) }
+    val jsonParser = remember { Json { ignoreUnknownKeys = true } }
 
     val pickFile = rememberSyncFilePickerLauncher { path ->
         cloudSyncStorage.configure(path)
@@ -57,7 +61,9 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Резервное копирование", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Обмен данными", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+            Text("Локальная копия", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Button(
                 onClick = {
@@ -86,6 +92,8 @@ fun SettingsScreen(
                             val json = withContext(Dispatchers.IO) { BackupStorage.load() }
                             if (json != null) {
                                 backupManager.importFromJson(json)
+                                onDataReloaded()
+                                onBack()
                                 showStatus("Бэкап восстановлен")
                             } else {
                                 showStatus("Нет сохранённого бэкапа")
@@ -102,9 +110,7 @@ fun SettingsScreen(
                 Text("Восстановить из резервной копии (импорт)")
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            Text("Синхронизация с облаком", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Синхронизация с облаком", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -161,8 +167,11 @@ fun SettingsScreen(
                             try {
                                 val json = withContext(Dispatchers.IO) { cloudSyncStorage.load() }
                                 if (json != null) {
-                                    backupManager.importFromJson(json)
-                                    showStatus("Данные загружены из облака")
+                                    val data = jsonParser.decodeFromString<BackupData>(json)
+                                    showStatus("Загружено ${data.patients.size} пациентов из облака")
+                                    withContext(Dispatchers.IO) { backupManager.importFromJson(json) }
+                                    onDataReloaded()
+                                    onBack()
                                 } else {
                                     showStatus("В облаке нет данных")
                                 }

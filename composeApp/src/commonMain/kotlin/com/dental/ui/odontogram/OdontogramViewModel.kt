@@ -47,9 +47,17 @@ class OdontogramViewModel(
         } else {
             teeth
         }
+        val crownSelections = finalTeeth.mapNotNull { tooth ->
+            tooth.crownOption?.let { tooth.number to it }
+        }.toMap()
+        val rootSelections = finalTeeth.mapNotNull { tooth ->
+            tooth.rootOption?.let { tooth.number to it }
+        }.toMap()
         _state.value = OdontogramState(
             teeth = finalTeeth,
             prostheticItems = items,
+            crownSelections = crownSelections,
+            rootSelections = rootSelections,
             currentPatientId = patientId,
             currentPatientName = patientName
         )
@@ -139,7 +147,12 @@ class OdontogramViewModel(
 
         val pid = s.currentPatientId
         if (pid != null && toothRepository != null) {
-            toothRepository.updateToothStatus(pid, number, status)
+            val tooth = updatedTeeth.find { it.number == number }
+            if (tooth != null) {
+                toothRepository.saveTooth(tooth)
+            } else {
+                toothRepository.updateToothStatus(pid, number, status)
+            }
         }
     }
 
@@ -214,27 +227,48 @@ class OdontogramViewModel(
 
     fun applyCrownOption(number: Int, option: CrownOption) {
         val s = _state.value
-        val updated = if (option == CrownOption.MISSING) {
-            s.crownSelections + (number to option) to s.rootSelections
-        } else {
-            s.crownSelections + (number to option) to s.rootSelections
+        val updatedTeeth = s.teeth.map { tooth ->
+            if (tooth.number == number) tooth.copy(crownOption = option) else tooth
         }
         _state.value = s.copy(
-            crownSelections = updated.first,
+            teeth = updatedTeeth,
+            crownSelections = s.crownSelections + (number to option),
             showToothPartMenu = false,
             selectedTooth = null,
             selectedToothPart = null
         )
+        val pid = s.currentPatientId
+        if (pid != null && toothRepository != null) {
+            val tooth = updatedTeeth.find { it.number == number }
+            if (tooth != null) {
+                toothRepository.saveTooth(tooth)
+            } else {
+                toothRepository.updateCrownOption(pid, number, option)
+            }
+        }
     }
 
     fun applyRootOption(number: Int, option: RootOption) {
         val s = _state.value
+        val updatedTeeth = s.teeth.map { tooth ->
+            if (tooth.number == number) tooth.copy(rootOption = option) else tooth
+        }
         _state.value = s.copy(
+            teeth = updatedTeeth,
             rootSelections = s.rootSelections + (number to option),
             showToothPartMenu = false,
             selectedTooth = null,
             selectedToothPart = null
         )
+        val pid = s.currentPatientId
+        if (pid != null && toothRepository != null) {
+            val tooth = updatedTeeth.find { it.number == number }
+            if (tooth != null) {
+                toothRepository.saveTooth(tooth)
+            } else {
+                toothRepository.updateRootOption(pid, number, option)
+            }
+        }
     }
 
     fun dismissPartMenu() {
@@ -267,6 +301,19 @@ class OdontogramViewModel(
         val tooth = _state.value.teeth.find { it.number == number }
         if (tooth?.status == ToothStatus.MISSING) return ProstheticStage.COMPLETED
         return items.maxByOrNull { it.updatedAt }?.stage ?: ProstheticStage.EXISTING
+    }
+
+    fun saveAll() {
+        val s = _state.value
+        val repo = toothRepository ?: return
+        s.teeth.forEach { tooth ->
+            repo.saveTooth(tooth)
+        }
+        s.prostheticItems.forEach { item ->
+            if (item.id == 0L) {
+                repo.saveProstheticItem(item)
+            }
+        }
     }
 
     companion object {

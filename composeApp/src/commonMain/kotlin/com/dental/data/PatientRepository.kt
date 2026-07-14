@@ -1,14 +1,28 @@
 package com.dental.data
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import com.dental.data.db.DentalDatabase
 import com.dental.data.db.PatientEntity
 import com.dental.model.Patient
 import com.dental.model.Sex
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
 class PatientRepository(private val db: DentalDatabase) {
 
     private val queries = db.patientQueries
+
+    @OptIn(FlowPreview::class)
+    fun observeAll(): Flow<List<Patient>> {
+        return queries.getAll()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities -> entities.map { it.toPatient() } }
+    }
 
     fun getAll(): List<Patient> {
         return queries.getAll().executeAsList().map { it.toPatient() }

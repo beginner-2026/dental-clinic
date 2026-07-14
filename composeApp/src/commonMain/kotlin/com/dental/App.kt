@@ -52,9 +52,12 @@ fun App(
     var currentScreen by remember { mutableStateOf(AppScreen.PATIENTS) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
-    var reloadKey by remember { mutableStateOf(0) }
-    fun reloadPatients() { reloadKey++ }
-    val patients = remember(reloadKey) { patientRepo.getAll() }
+    var dataGeneration by remember { mutableIntStateOf(0) }
+    var patients by remember { mutableStateOf(patientRepo.getAll()) }
+    fun reloadPatients() {
+        patients = patientRepo.getAll()
+        dataGeneration++
+    }
 
     LaunchedEffect(Unit) {
         SeedData.seedIfEmpty(database)
@@ -122,7 +125,12 @@ fun App(
                 AppScreen.SETTINGS -> SettingsScreen(
                     backupManager = backupManager,
                     cloudSyncStorage = cloudSyncStorage,
-                    onBack = { currentScreen = AppScreen.PATIENTS }
+                    onBack = {
+                        dataGeneration++
+                        patients = patientRepo.getAll()
+                        currentScreen = AppScreen.PATIENTS
+                    },
+                    onDataReloaded = { reloadPatients() }
                 )
                 else -> {
                     val currentPatient = selectedPatient
@@ -139,7 +147,8 @@ fun App(
                         )
                     } else {
                         when (currentScreen) {
-                            AppScreen.PATIENTS -> PatientScreen(
+                            AppScreen.PATIENTS -> key(dataGeneration) {
+                                PatientScreen(
                                 patients = patients,
                                 onAddPatient = { showAddPatientDialog = true },
                                 onDeletePatient = { id ->
@@ -149,6 +158,7 @@ fun App(
                                 onReload = { reloadPatients() },
                                 onPatientClick = { selectedPatient = it }
                             )
+                            }
                             AppScreen.PRICE_LIST -> PriceListScreen(priceListRepo)
                             AppScreen.SETTINGS -> { /* handled above */ }
                         }

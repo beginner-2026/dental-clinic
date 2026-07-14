@@ -18,6 +18,10 @@ actual class DatabaseDriverFactory {
 
         if (isNew) {
             DentalDatabase.Schema.create(driver)
+        } else {
+            try {
+                driver.execute(null, "ALTER TABLE ToothEntity ADD COLUMN rootOption TEXT", 0, {})
+            } catch (_: Exception) { }
         }
 
         return driver

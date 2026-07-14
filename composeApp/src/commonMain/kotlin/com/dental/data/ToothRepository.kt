@@ -24,7 +24,8 @@ class ToothRepository(db: DentalDatabase) {
                 quadrant = tooth.quadrant.toLong(),
                 status = tooth.status.name,
                 examType = null,
-                crownOption = null
+                crownOption = tooth.crownOption?.name,
+                rootOption = tooth.rootOption?.name
             )
         } else {
             toothQueries.upsert(
@@ -35,7 +36,8 @@ class ToothRepository(db: DentalDatabase) {
                 quadrant = tooth.quadrant.toLong(),
                 status = tooth.status.name,
                 examType = null,
-                crownOption = null
+                crownOption = tooth.crownOption?.name,
+                rootOption = tooth.rootOption?.name
             )
         }
     }
@@ -46,6 +48,14 @@ class ToothRepository(db: DentalDatabase) {
 
     fun updateToothStatus(patientId: Long, number: Int, status: ToothStatus) {
         toothQueries.updateStatus(status.name, patientId, number.toLong())
+    }
+
+    fun updateCrownOption(patientId: Long, number: Int, option: CrownOption?) {
+        toothQueries.updateCrownOption(option?.name, patientId, number.toLong())
+    }
+
+    fun updateRootOption(patientId: Long, number: Int, option: RootOption?) {
+        toothQueries.updateRootOption(option?.name, patientId, number.toLong())
     }
 
     fun initDefaultTeeth(patientId: Long) {
@@ -59,7 +69,8 @@ class ToothRepository(db: DentalDatabase) {
                 quadrant = (n / 10).toLong(),
                 status = ToothStatus.PRESENT.name,
                 examType = null,
-                crownOption = null
+                crownOption = null,
+                rootOption = null
             )
         }
     }
@@ -97,7 +108,9 @@ class ToothRepository(db: DentalDatabase) {
             number = number.toInt(),
             arch = Arch.valueOf(arch),
             quadrant = quadrant.toInt(),
-            status = ToothStatus.valueOf(status)
+            status = ToothStatus.valueOf(status),
+            crownOption = crownOption?.let { try { CrownOption.valueOf(it) } catch (_: Exception) { null } },
+            rootOption = rootOption?.let { try { RootOption.valueOf(it) } catch (_: Exception) { null } }
         )
     }
 

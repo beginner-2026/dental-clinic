@@ -6,7 +6,9 @@ data class Tooth(
     val number: Int,
     val arch: Arch,
     val quadrant: Int,
-    val status: ToothStatus = ToothStatus.PRESENT
+    val status: ToothStatus = ToothStatus.PRESENT,
+    val crownOption: CrownOption? = null,
+    val rootOption: RootOption? = null
 )
 
 enum class Arch { UPPER, LOWER }

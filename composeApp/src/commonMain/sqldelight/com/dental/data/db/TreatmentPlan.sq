@@ -13,6 +13,10 @@ insert:
 INSERT INTO TreatmentPlanEntity(patientId, toothNumbers, procedure, createdAt)
 VALUES (?, ?, ?, ?);
 
+insertWithId:
+INSERT OR REPLACE INTO TreatmentPlanEntity(id, patientId, toothNumbers, procedure, createdAt)
+VALUES (?, ?, ?, ?, ?);
+
 deleteByPatientId:
 DELETE FROM TreatmentPlanEntity WHERE patientId = ?;
 

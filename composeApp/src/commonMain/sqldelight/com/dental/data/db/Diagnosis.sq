@@ -14,6 +14,10 @@ insert:
 INSERT INTO DiagnosisEntity(patientId, code, diagnosisText, toothNumber, createdAt)
 VALUES (?, ?, ?, ?, ?);
 
+insertWithId:
+INSERT OR REPLACE INTO DiagnosisEntity(id, patientId, code, diagnosisText, toothNumber, createdAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
 deleteByPatientId:
 DELETE FROM DiagnosisEntity WHERE patientId = ?;
 

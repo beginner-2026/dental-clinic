@@ -35,9 +35,17 @@ insertInvoice:
 INSERT INTO InvoiceEntity(patientId, title, dateCreated, dateUpdated, status, discountPercent, totalBeforeDiscount, discountAmount, totalAfterDiscount)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
+insertInvoiceWithId:
+INSERT OR REPLACE INTO InvoiceEntity(id, patientId, title, dateCreated, dateUpdated, status, discountPercent, totalBeforeDiscount, discountAmount, totalAfterDiscount)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
 insertInvoiceItem:
 INSERT INTO InvoiceItemEntity(invoiceId, serviceName, serviceCode, quantity, unitPrice, lineTotal)
 VALUES (?, ?, ?, ?, ?, ?);
+
+insertInvoiceItemWithId:
+INSERT OR REPLACE INTO InvoiceItemEntity(id, invoiceId, serviceName, serviceCode, quantity, unitPrice, lineTotal)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 updateInvoiceStatus:
 UPDATE InvoiceEntity SET status = ?, dateUpdated = ? WHERE id = ?;
