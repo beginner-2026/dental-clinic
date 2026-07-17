@@ -16,6 +16,11 @@ class VisitPositionRepository(private val db: DentalDatabase) {
         return queries.getAllPositions().executeAsList().map { it.toPosition() }
     }
 
+    fun createPosition(name: String, sortOrder: Int = 0): Long {
+        queries.insertPosition(name = name, sortOrder = sortOrder.toLong())
+        return queries.getLastInsertId().executeAsOne()
+    }
+
     fun getPositionById(id: Long): Position? {
         return queries.getPositionById(id).executeAsOneOrNull()?.toPosition()
     }

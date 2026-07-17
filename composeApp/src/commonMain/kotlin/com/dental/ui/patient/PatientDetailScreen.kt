@@ -105,7 +105,6 @@ fun PatientDetailScreen(
     var selectedPositionIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var positionToothNumbers by remember { mutableStateOf<Map<Long, String>>(emptyMap()) }
     var visitDateMillis by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
-    var showVisitDatePicker by remember { mutableStateOf(false) }
 
     fun loadVisits() {
         visits = visitPositionRepository.getVisitsByPatientId(patient.id)
@@ -615,10 +614,9 @@ fun PatientDetailScreen(
     if (showAddVisitDialog) {
         AddVisitDialog(
             initialDateMillis = visitDateMillis,
-            onDateChanged = { visitDateMillis = it },
-            onConfirm = {
-                if (visitDateMillis > 0) {
-                    visitPositionRepository.createVisit(patient.id, visitDateMillis)
+            onConfirm = { selectedDate ->
+                if (selectedDate > 0) {
+                    visitPositionRepository.createVisit(patient.id, selectedDate)
                     visitDateMillis = Clock.System.now().toEpochMilliseconds()
                     showAddVisitDialog = false
                     loadVisits()
@@ -895,7 +893,7 @@ private fun InvoiceHistoryView(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Позиций: ${inv.items.size}",
+                                    text = "${inv.items.size} поз. · ${formatPrice(inv.totalAfterDiscount)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1351,50 +1349,78 @@ private fun VisitDiarySection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddVisitDialog(
     initialDateMillis: Long,
-    onDateChanged: (Long) -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var dateText by remember(initialDateMillis) {
-        mutableStateOf(formatVisitDate(initialDateMillis))
-    }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialDateMillis
+    )
+    val selectedDate = datePickerState.selectedDateMillis
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Добавить посещение") },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Добавить посещение",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (selectedDate != null) {
+                        Button(
+                            onClick = { onConfirm(selectedDate) },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                        ) {
+                            Text("Сохранить")
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
                 Text(
                     "Дата посещения",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
-                OutlinedTextField(
-                    value = dateText,
-                    onValueChange = { dateText = it },
-                    placeholder = { Text("ДД.ММ.ГГГГ") },
+                DatePicker(
+                    state = datePickerState,
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Дата") }
+                    title = null,
+                    headline = null,
+                    showModeToggle = true
                 )
+
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "Будет создано новое посещение. После создания вы сможете выбрать позиции.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(Modifier.height(12.dp))
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Отмена")
+                }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) { Text("Создать") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Отмена") }
         }
-    )
+    }
 }
 
 @Composable

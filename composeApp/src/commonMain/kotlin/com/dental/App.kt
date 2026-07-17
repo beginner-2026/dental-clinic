@@ -61,6 +61,13 @@ fun App(
 
     LaunchedEffect(Unit) {
         SeedData.seedIfEmpty(database)
+        if (priceListRepo.getAll().none { it.name == "Перебазировка протеза" }) {
+            priceListRepo.create("Пользовательские услуги", "Перебазировка протеза", 6000_00)
+        }
+        if (visitPositionRepo.getAllPositions().none { it.name == "Перебазировка протеза" }) {
+            val maxOrder = visitPositionRepo.getAllPositions().maxOfOrNull { it.sortOrder } ?: 0
+            visitPositionRepo.createPosition("Перебазировка протеза", maxOrder + 1)
+        }
         reloadPatients()
     }
 
