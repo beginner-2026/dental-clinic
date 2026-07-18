@@ -3,7 +3,7 @@ CREATE TABLE DiagnosisEntity (
     patientId INTEGER NOT NULL,
     code TEXT,
     diagnosisText TEXT NOT NULL,
-    toothNumber INTEGER,
+    toothNumber TEXT,
     createdAt INTEGER NOT NULL
 );
 

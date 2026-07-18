@@ -12,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
+
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dental.model.Diagnosis
@@ -31,11 +31,11 @@ fun DiagnosisEditorScreen(
         existingDiagnoses.map { it.diagnosisText }.toSet()
     }
     val initialToothNumbers = remember(existingDiagnoses) {
-        existingDiagnoses.associate { it.diagnosisText to it.toothNumber }
+        existingDiagnoses.associate { it.diagnosisText to (it.toothNumber?.takeIf { n -> n.isNotBlank() }) }
     }
 
     var checkedItems by remember { mutableStateOf(initialChecked) }
-    var toothNumbers by remember { mutableStateOf(initialToothNumbers) }
+    var toothNumbers by remember { mutableStateOf<Map<String, String?>>(initialToothNumbers) }
 
     Scaffold(
         topBar = {
@@ -102,16 +102,14 @@ fun DiagnosisEditorScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
-                        value = (toothNumbers[pred.text]?.toString() ?: ""),
+                        value = (toothNumbers[pred.text] ?: ""),
                         onValueChange = { value ->
-                            val num = value.filter { it.isDigit() }.toLongOrNull()
-                            toothNumbers = toothNumbers + (pred.text to num)
+                            toothNumbers = toothNumbers + (pred.text to value)
                         },
                         modifier = Modifier.width(70.dp),
                         singleLine = true,
                         enabled = isChecked,
                         placeholder = { Text("№", fontSize = 12.sp) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         textStyle = MaterialTheme.typography.bodySmall
                     )
 

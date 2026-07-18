@@ -79,7 +79,7 @@ data class BackupDiagnosis(
     val patientId: Long,
     val code: String? = null,
     val diagnosisText: String,
-    val toothNumber: Long? = null,
+    val toothNumber: String? = null,
     val createdAt: Long
 )
 

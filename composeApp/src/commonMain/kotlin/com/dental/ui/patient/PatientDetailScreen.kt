@@ -346,9 +346,9 @@ fun PatientDetailScreen(
                                                         modifier = Modifier.fillMaxWidth().padding(12.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        if (d.toothNumber != null) {
+                                                        if (d.toothNumber != null && d.toothNumber.isNotBlank()) {
                                                             Text(
-                                                                text = "Зуб ${d.toothNumber}",
+                                                                text = d.toothNumber,
                                                                 style = MaterialTheme.typography.bodyMedium,
                                                                 fontWeight = FontWeight.Bold,
                                                                 color = MaterialTheme.colorScheme.primary,
