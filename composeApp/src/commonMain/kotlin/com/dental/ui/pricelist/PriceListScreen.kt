@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,8 @@ fun PriceListScreen(repository: PriceListRepository) {
         loadItems()
     }
 
+    var deleteMode by remember { mutableStateOf(false) }
+
     val filtered = remember(searchQuery, items) {
         if (searchQuery.isBlank()) items
         else {
@@ -46,9 +49,24 @@ fun PriceListScreen(repository: PriceListRepository) {
     }
     val grouped = remember(filtered) { filtered.groupBy { it.category } }
 
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(title = { Text("Прейскурант") })
+            TopAppBar(
+                title = { Text("Прейскурант") },
+                scrollBehavior = scrollBehavior,
+                actions = {
+                    IconButton(onClick = { deleteMode = !deleteMode }) {
+                        Icon(
+                            if (deleteMode) Icons.Default.DeleteSweep else Icons.Default.Delete,
+                            contentDescription = if (deleteMode) "Выключить удаление" else "Режим удаления",
+                            tint = if (deleteMode) Color.Red else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            )
         }
     ) { padding ->
         Column(
@@ -112,14 +130,16 @@ fun PriceListScreen(repository: PriceListRepository) {
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
-                                IconButton(
-                                    onClick = {
-                                        repository.delete(item.id)
-                                        reloadKey++
-                                    },
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = Color.Red, modifier = Modifier.size(18.dp))
+                                if (deleteMode) {
+                                    IconButton(
+                                        onClick = {
+                                            repository.delete(item.id)
+                                            reloadKey++
+                                        },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = Color.Red, modifier = Modifier.size(18.dp))
+                                    }
                                 }
                             }
                         }

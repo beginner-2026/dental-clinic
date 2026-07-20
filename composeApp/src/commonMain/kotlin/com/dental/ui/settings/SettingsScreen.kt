@@ -71,8 +71,8 @@ fun SettingsScreen(
                         try {
                             val json = backupManager.exportToJson()
                             val ok = withContext(Dispatchers.IO) { BackupStorage.save(json) }
-                            if (ok) showStatus("Бэкап сохранён на устройстве")
-                            else showStatus("Ошибка сохранения бэкапа")
+                            if (ok) showStatus("Резервная копия сохранена на устройстве")
+                            else showStatus("Ошибка сохранения резервной копии")
                         } catch (e: Exception) {
                             showStatus("${e.message}")
                         }
@@ -94,9 +94,9 @@ fun SettingsScreen(
                                 backupManager.importFromJson(json)
                                 onDataReloaded()
                                 onBack()
-                                showStatus("Бэкап восстановлен")
+                                showStatus("Резервная копия восстановлена")
                             } else {
-                                showStatus("Нет сохранённого бэкапа")
+                                showStatus("Нет сохранённой резервной копии")
                             }
                         } catch (e: Exception) {
                             showStatus("${e.message}")

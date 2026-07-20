@@ -208,24 +208,21 @@ internal fun ArchCanvas(
                 val crownOpt = crownSelections[number]
                 val abbr = CrownOptionAbbreviations[crownOpt] ?: ""
                 if (abbr.isNotEmpty()) {
-                    Box(
+                    var abbrSize by remember { mutableStateOf(IntSize.Zero) }
+                    Text(
+                        text = abbr,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF212121),
+                        onTextLayout = { abbrSize = IntSize(it.size.width, it.size.height) },
                         modifier = Modifier
                             .offset {
                                 IntOffset(
-                                    (cx - 25f).toInt(),
-                                    ((crownH / 2f - 8f).toInt())
+                                    (cx - abbrSize.width / 2f).toInt(),
+                                    ((crownH / 2f - abbrSize.height / 2f).toInt())
                                 )
                             }
-                            .width(50.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = abbr,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF212121)
-                        )
-                    }
+                    )
                 }
 
                 // Root label (КВ / АШ / РЕТ)
@@ -237,23 +234,20 @@ internal fun ArchCanvas(
                         RootOption.RETAINED -> "РЕТ"
                         else -> ""
                     }
-                    val labelColor = when (rootOpt) {
-                        RootOption.POST_CORE -> Color(0xFF212121)
-                        RootOption.ANCHOR_PIN -> Color(0xFF212121)
-                        RootOption.RETAINED -> Color(0xFF212121)
-                        else -> Color(0xFF212121)
-                    }
+                    val labelColor = Color(0xFF212121)
                     val labelPos = getRootLabelPosition(cx, crownH, drawWidth, rootH, getToothType(number))
+                    var labelSize by remember { mutableStateOf(IntSize.Zero) }
                     Text(
                         text = label,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = labelColor,
+                        onTextLayout = { labelSize = IntSize(it.size.width, it.size.height) },
                         modifier = Modifier
                             .offset {
                                 IntOffset(
-                                    (labelPos.x - 12f).toInt(),
-                                    (labelPos.y - 7f).toInt()
+                                    (labelPos.x - labelSize.width / 2f).toInt(),
+                                    (labelPos.y - labelSize.height / 2f).toInt()
                                 )
                             }
                     )

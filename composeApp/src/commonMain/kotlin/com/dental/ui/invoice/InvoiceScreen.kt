@@ -17,10 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.dental.data.InvoiceCalculator
+import com.dental.data.PriceListRepository
 import com.dental.model.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +30,7 @@ import com.dental.model.*
 fun InvoiceScreen(
     invoiceParam: Invoice?,
     patients: List<Patient>,
+    priceListRepository: PriceListRepository,
     onSave: (Invoice) -> Unit,
     onMenuClick: () -> Unit = {}
 ) {
@@ -249,6 +252,7 @@ fun InvoiceScreen(
     // Price List Dialog
     if (showPriceList) {
         PriceListDialog(
+            repository = priceListRepository,
             onDismiss = { showPriceList = false },
             onSelect = { item, qty ->
                 val newItem = InvoiceItem(
@@ -331,6 +335,7 @@ fun InvoiceScreen(
 
 @Composable
 private fun PriceListDialog(
+    repository: PriceListRepository,
     onDismiss: () -> Unit,
     onSelect: (PriceListItem, Int) -> Unit
 ) {
@@ -339,7 +344,7 @@ private fun PriceListDialog(
     var allItems by remember { mutableStateOf<List<PriceListItem>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        allItems = emptyList()
+        allItems = repository.getAll()
     }
 
     val filtered = remember(searchQuery, allItems) {
@@ -353,12 +358,12 @@ private fun PriceListDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            modifier = Modifier.fillMaxWidth(0.6f).fillMaxHeight(0.8f),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             shape = MaterialTheme.shapes.large,
             tonalElevation = 6.dp,
             shadowElevation = 8.dp
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
                     Text("Выбрать из прайс-листа", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                     TextButton(onClick = onDismiss) { Text("Готово") }
@@ -383,19 +388,25 @@ private fun PriceListDialog(
                     singleLine = true
                 )
                 Spacer(Modifier.height(8.dp))
-                LazyColumn(modifier = Modifier.weight(1f)) {
+                LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
                     grouped.forEach { (category, group) ->
                         item(key = "header_$category") {
                             Text(category, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
                         }
                         items(group, key = { it.id }) { plItem ->
                             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(plItem.name, style = MaterialTheme.typography.bodyMedium)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = plItem.name.replace("\n", " ").replace("\r", " ").replace(Regex("\\s+"), " "),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
+                                Spacer(Modifier.width(4.dp))
                                 Text(formatPrice(plItem.defaultPrice), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
-                                FilledTonalButton(onClick = { onSelect(plItem, quantity.toIntOrNull() ?: 1) }, modifier = Modifier.height(32.dp), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)) {
+                                Spacer(Modifier.width(4.dp))
+                                FilledTonalButton(onClick = { onSelect(plItem, quantity.toIntOrNull() ?: 1) }, modifier = Modifier.height(32.dp).widthIn(min = 24.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
                                     Text("+", fontSize = 14.sp)
                                 }
                             }

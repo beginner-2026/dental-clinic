@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,12 +27,25 @@ fun PatientScreen(
     onReload: () -> Unit,
     onPatientClick: (Patient) -> Unit = {}
 ) {
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf<Patient?>(null) }
+
+    var deleteMode by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Пациенты") })
+            TopAppBar(
+                title = { Text("Пациенты") },
+                actions = {
+                    IconButton(onClick = { deleteMode = !deleteMode }) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Режим удаления",
+                            tint = if (deleteMode) Color(0xFFE53935) else LocalContentColor.current
+                        )
+                    }
+                }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddPatient) {
@@ -67,6 +81,7 @@ fun PatientScreen(
                 items(filteredPatients, key = { it.id }) { patient ->
                     PatientCard(
                         patient = patient,
+                        deleteMode = deleteMode,
                         onDelete = { showDeleteConfirm = patient },
                         onClick = { onPatientClick(patient) }
                     )
@@ -99,7 +114,7 @@ fun PatientScreen(
 }
 
 @Composable
-private fun PatientCard(patient: Patient, onDelete: () -> Unit, onClick: () -> Unit = {}) {
+private fun PatientCard(patient: Patient, deleteMode: Boolean = false, onDelete: () -> Unit, onClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,12 +143,14 @@ private fun PatientCard(patient: Patient, onDelete: () -> Unit, onClick: () -> U
                 )
 
             }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Удалить",
-                    tint = Color(0xFFE53935)
-                )
+            if (deleteMode) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Удалить",
+                        tint = Color(0xFFE53935)
+                    )
+                }
             }
         }
     }

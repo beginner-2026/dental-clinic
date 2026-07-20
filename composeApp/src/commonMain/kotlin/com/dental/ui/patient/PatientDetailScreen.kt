@@ -6,12 +6,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +26,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -80,27 +84,27 @@ fun PatientDetailScreen(
     onBack: () -> Unit
 ) {
     val state by odontogramViewModel.state.collectAsState()
-    var tabIndex by remember { mutableIntStateOf(0) }
-    var isQuadrantView by remember { mutableStateOf(false) }
+    var isQuadrantView by rememberSaveable { mutableStateOf(false) }
+    var showFullPriceList by rememberSaveable { mutableStateOf(false) }
 
     var currentInvoice by remember { mutableStateOf<Invoice?>(null) }
     var allInvoices by remember { mutableStateOf<List<Invoice>>(emptyList()) }
-    var showInvoiceEditor by remember { mutableStateOf(false) }
-    var discountInput by remember { mutableStateOf("0") }
-    var showPriceListDialog by remember { mutableStateOf(false) }
-    var showEditInvoiceDialog by remember { mutableStateOf(false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showInvoiceEditor by rememberSaveable { mutableStateOf(false) }
+    var discountInput by rememberSaveable { mutableStateOf("0") }
+    var showPriceListDialog by rememberSaveable { mutableStateOf(false) }
+    var showEditInvoiceDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
 
     var diagnoses by remember { mutableStateOf<List<Diagnosis>>(emptyList()) }
-    var showDiagnosisEditor by remember { mutableStateOf(false) }
+    var showDiagnosisEditor by rememberSaveable { mutableStateOf(false) }
 
     var treatmentPlans by remember { mutableStateOf<List<TreatmentPlanItem>>(emptyList()) }
-    var showTreatmentPlanEditor by remember { mutableStateOf(false) }
+    var showTreatmentPlanEditor by rememberSaveable { mutableStateOf(false) }
 
     var visits by remember { mutableStateOf<List<Visit>>(emptyList()) }
     var allPositions by remember { mutableStateOf<List<Position>>(emptyList()) }
-    var showAddVisitDialog by remember { mutableStateOf(false) }
-    var showPositionSelectionDialog by remember { mutableStateOf(false) }
+    var showAddVisitDialog by rememberSaveable { mutableStateOf(false) }
+    var showPositionSelectionDialog by rememberSaveable { mutableStateOf(false) }
     var editingVisit by remember { mutableStateOf<Visit?>(null) }
     var selectedPositionIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var positionToothNumbers by remember { mutableStateOf<Map<Long, String>>(emptyMap()) }
@@ -150,7 +154,10 @@ fun PatientDetailScreen(
         allInvoices = invoiceRepository.getAllByPatient(patient.id)
     }
 
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { Text("${patient.lastName} ${patient.firstName}") },
@@ -158,94 +165,86 @@ fun PatientDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior
             )
         }
-    ) { padding ->
+        ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("${patient.lastName} ${patient.firstName} ${patient.middleName ?: ""}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        if (patient.phone != null) {
-                            Text(patient.phone, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    if (patient.notes != null) {
-                        Text("Заметки: ${patient.notes}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+            Text(
+                text = "Медицинская карта",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+
+            if (patient.notes != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.width(4.dp))
+                    Text(patient.notes, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 }
             }
 
-            TabRow(selectedTabIndex = tabIndex) {
-                Tab(selected = tabIndex == 0, onClick = { tabIndex = 0 }, text = { Text("Медицинская карта") }, icon = { Icon(Icons.Default.Favorite, contentDescription = null) })
-                Tab(selected = tabIndex == 1, onClick = { tabIndex = 1 }, text = { Text("Прейскурант") }, icon = { Icon(Icons.Default.MonetizationOn, contentDescription = null) })
-            }
+            val sections = listOf("Зубная формула", "Диагноз", "План лечения", "Дневник посещений", "Счёт")
+            var expandedSection by rememberSaveable { mutableStateOf("") }
 
-            when (tabIndex) {
-                0 -> {
-                    val sections = listOf("Зубная формула", "Диагноз", "План лечения", "Дневник посещений", "Счёт")
-                    var expandedSection by remember { mutableStateOf("") }
-
-                    Column(
-                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            Column(
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+            ) {
+                sections.forEach { section ->
+                    val isExpanded = expandedSection == section
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 0.dp),
+                        onClick = { expandedSection = if (isExpanded) "" else section },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isExpanded) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            else MaterialTheme.colorScheme.surface
+                        )
                     ) {
-                        sections.forEach { section ->
-                            val isExpanded = expandedSection == section
-                            Card(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 0.dp),
-                                onClick = { expandedSection = if (isExpanded) "" else section },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isExpanded) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                    else MaterialTheme.colorScheme.surface
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (section == "Зубная формула") {
+                                Icon(
+                                    painter = ToothPainter(),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    if (section == "Зубная формула") {
-                                        Icon(
-                                            painter = ToothPainter(),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(22.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    } else {
-                                        val icon = when (section) {
-                                            "Диагноз" -> Icons.Default.LocalHospital
-                                            "План лечения" -> Icons.Default.Checklist
-                                            "Дневник посещений" -> Icons.Default.DateRange
-                                            "Счёт" -> Icons.Default.MonetizationOn
-                                            else -> Icons.Default.Info
-                                        }
-                                        Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
-                                    }
-                                    Spacer(Modifier.width(12.dp))
-                                    Text(
-                                        text = section,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Icon(
-                                        if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = if (isExpanded) "Свернуть" else "Развернуть"
-                                    )
+                            } else {
+                                val icon = when (section) {
+                                    "Диагноз" -> Icons.Default.LocalHospital
+                                    "План лечения" -> Icons.Default.Checklist
+                                    "Дневник посещений" -> Icons.Default.DateRange
+                                    "Счёт" -> Icons.Default.MonetizationOn
+                                    else -> Icons.Default.Info
                                 }
+                                Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
                             }
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                text = section,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isExpanded) "Свернуть" else "Развернуть"
+                            )
+                        }
+                    }
 
-                            if (isExpanded) {
-                                when (section) {
-                                    "Зубная формула" -> {
+                    if (isExpanded) {
+                        when (section) {
+                            "Зубная формула" -> {
                                         Row(
                                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically,
@@ -477,15 +476,21 @@ fun PatientDetailScreen(
                                         }
                                     }
                                 }
-                            }
                         }
                     }
                 }
-                1 -> {
-                    PriceListTabContent(priceListRepository)
-                }
             }
-        }
+
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { showFullPriceList = true },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+            ) {
+                Icon(Icons.Default.MonetizationOn, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Прейскурант")
+            }
+            Spacer(Modifier.height(8.dp))
     }
 
     if (showDiagnosisEditor) {
@@ -561,6 +566,25 @@ fun PatientDetailScreen(
                 showPriceListDialog = false
             }
         )
+    }
+
+    if (showFullPriceList) {
+        Dialog(onDismissRequest = { showFullPriceList = false }) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                shape = MaterialTheme.shapes.large,
+                tonalElevation = 6.dp,
+                shadowElevation = 8.dp
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                        Text("Прейскурант", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { showFullPriceList = false }) { Text("Готово") }
+                    }
+                    PriceListTabContent(repository = priceListRepository, modifier = Modifier.heightIn(max = 400.dp))
+                }
+            }
+        }
     }
 
     if (showEditInvoiceDialog) {
@@ -680,7 +704,7 @@ private fun InvoiceTabContent(
     onDeleteInvoiceClick: () -> Unit,
     onSave: () -> Unit
 ) {
-    var itemsExpanded by remember { mutableStateOf(false) }
+    var itemsExpanded by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(invoice.items.size) {
         if (invoice.items.isNotEmpty()) itemsExpanded = true
@@ -849,7 +873,7 @@ private fun InvoiceHistoryView(
     onNewInvoice: () -> Unit,
     onRefresh: () -> Unit
 ) {
-    var expandedId by remember { mutableStateOf<Long?>(null) }
+    var expandedId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -945,14 +969,17 @@ private fun InvoiceHistoryView(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PriceListTabContent(repository: PriceListRepository) {
-    var searchQuery by remember { mutableStateOf("") }
+private fun PriceListTabContent(
+    repository: PriceListRepository,
+    modifier: Modifier = Modifier
+) {
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     var items by remember { mutableStateOf<List<PriceListItem>>(emptyList()) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showAddDialog by remember { mutableStateOf(false) }
+    var showEditDialog by rememberSaveable { mutableStateOf(false) }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<PriceListItem?>(null) }
-    var addingCategory by remember { mutableStateOf("") }
-    var reloadKey by remember { mutableStateOf(0) }
+    var addingCategory by rememberSaveable { mutableStateOf("") }
+    var reloadKey by rememberSaveable { mutableStateOf(0) }
 
     LaunchedEffect(reloadKey) {
         items = repository.getAll()
@@ -967,16 +994,28 @@ private fun PriceListTabContent(repository: PriceListRepository) {
     }
     val grouped = remember(filtered) { filtered.groupBy { it.category } }
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    var deleteMode by rememberSaveable { mutableStateOf(false) }
+
+    Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Поиск услуг...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Поиск услуг...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = { deleteMode = !deleteMode }) {
+                Icon(
+                    if (deleteMode) Icons.Default.DeleteSweep else Icons.Default.Delete,
+                    contentDescription = if (deleteMode) "Выключить удаление" else "Режим удаления",
+                    tint = if (deleteMode) Color.Red else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
         Spacer(Modifier.height(8.dp))
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -1031,14 +1070,16 @@ private fun PriceListTabContent(repository: PriceListRepository) {
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            IconButton(
-                                onClick = {
-                                    repository.delete(item.id)
-                                    reloadKey++
-                                },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = Color.Red, modifier = Modifier.size(18.dp))
+                            if (deleteMode) {
+                                IconButton(
+                                    onClick = {
+                                        repository.delete(item.id)
+                                        reloadKey++
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Удалить", tint = Color.Red, modifier = Modifier.size(18.dp))
+                                }
                             }
                         }
                     }
@@ -1173,12 +1214,12 @@ private fun PriceListSelectionDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            modifier = Modifier.fillMaxWidth(0.6f).fillMaxHeight(0.8f),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             shape = MaterialTheme.shapes.large,
             tonalElevation = 6.dp,
             shadowElevation = 8.dp
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text("Выбрать из Прейскуранта", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 8.dp))
 
                 OutlinedTextField(
@@ -1190,7 +1231,7 @@ private fun PriceListSelectionDialog(
                 )
                 Spacer(Modifier.height(8.dp))
 
-                LazyColumn(modifier = Modifier.weight(1f)) {
+                LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
                     grouped.forEach { (category, group) ->
                         item(key = "header_$category") {
                             Text(category, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
@@ -1204,22 +1245,35 @@ private fun PriceListSelectionDialog(
                                         selectedItems[plItem.id] = if (checked) 1 else 0
                                     }
                                 )
-                                Column(Modifier.weight(1f)) {
-                                    Text(plItem.name, style = MaterialTheme.typography.bodyMedium)
-                                }
-                                Text(formatPrice(plItem.defaultPrice), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
-                                if (qty > 0) {
-                                    IconButton(onClick = { if (qty > 1) selectedItems[plItem.id] = qty - 1 }, modifier = Modifier.size(28.dp)) {
-                                        Icon(Icons.Default.Remove, contentDescription = "Уменьшить", modifier = Modifier.size(18.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = plItem.name.replace("\n", " ").replace("\r", " ").replace(Regex("\\s+"), " "),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    if (qty > 0) {
+                                        Spacer(Modifier.height(2.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(onClick = { if (qty > 1) selectedItems[plItem.id] = qty - 1 }, modifier = Modifier.size(24.dp)) {
+                                                Icon(Icons.Default.Remove, contentDescription = "Уменьшить", modifier = Modifier.size(16.dp))
+                                            }
+                                            Text("$qty", style = MaterialTheme.typography.bodyMedium)
+                                            IconButton(onClick = { selectedItems[plItem.id] = qty + 1 }, modifier = Modifier.size(24.dp)) {
+                                                Icon(Icons.Default.Add, contentDescription = "Увеличить", modifier = Modifier.size(16.dp))
+                                            }
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("× ${formatPrice(plItem.defaultPrice)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
-                                    Text("$qty", style = MaterialTheme.typography.bodyMedium)
-                                    IconButton(onClick = { selectedItems[plItem.id] = qty + 1 }, modifier = Modifier.size(28.dp)) {
-                                        Icon(Icons.Default.Add, contentDescription = "Увеличить", modifier = Modifier.size(18.dp))
-                                    }
-                                } else {
-                                    Spacer(Modifier.width(72.dp))
                                 }
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = formatPrice(plItem.defaultPrice * if (qty > 0) qty else 1),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                             HorizontalDivider()
                         }

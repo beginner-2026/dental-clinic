@@ -7,9 +7,11 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import com.dental.data.AppointmentRepository
 import com.dental.data.DatabaseDriverFactory
 import com.dental.data.DiagnosisRepository
@@ -49,8 +51,10 @@ fun App(
     val visitPositionRepo = remember { VisitPositionRepository(database) }
     val priceListRepo = remember { PriceListRepository(database) }
 
-    var currentScreen by remember { mutableStateOf(AppScreen.PATIENTS) }
+    var currentScreenName by rememberSaveable { mutableStateOf(AppScreen.PATIENTS.name) }
+    var currentScreen by remember(currentScreenName) { mutableStateOf(AppScreen.valueOf(currentScreenName)) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
     var dataGeneration by remember { mutableIntStateOf(0) }
     var patients by remember { mutableStateOf(patientRepo.getAll()) }
@@ -71,20 +75,23 @@ fun App(
         reloadPatients()
     }
 
-    var selectedPatient by remember { mutableStateOf<Patient?>(null) }
+    var selectedPatientId by rememberSaveable { mutableStateOf(-1L) }
+    val selectedPatient = patients.find { it.id == selectedPatientId }
     val odontogramViewModel = remember { OdontogramViewModel(toothRepo) }
 
-    var showAddPatientDialog by remember { mutableStateOf(false) }
-    var newPatientLastName by remember { mutableStateOf("") }
-    var newPatientFirstName by remember { mutableStateOf("") }
-    var newPatientMiddleName by remember { mutableStateOf("") }
-    var newPatientPhone by remember { mutableStateOf("") }
+    var showAddPatientDialog by rememberSaveable { mutableStateOf(false) }
+    var newPatientLastName by rememberSaveable { mutableStateOf("") }
+    var newPatientFirstName by rememberSaveable { mutableStateOf("") }
+    var newPatientMiddleName by rememberSaveable { mutableStateOf("") }
+    var newPatientPhone by rememberSaveable { mutableStateOf("") }
 
     DentalTheme {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                ModalDrawerSheet {
+                ModalDrawerSheet(
+                    modifier = Modifier.padding(start = 20.dp)
+                ) {
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = "Стоматологическая клиника",
@@ -104,6 +111,8 @@ fun App(
                         label = { Text("Пациенты") },
                         selected = currentScreen == AppScreen.PATIENTS,
                         onClick = {
+                            scope.launch { drawerState.close() }
+                            currentScreenName = AppScreen.PATIENTS.name
                             currentScreen = AppScreen.PATIENTS
                             reloadPatients()
                         }
@@ -113,6 +122,8 @@ fun App(
                         label = { Text("Прейскурант") },
                         selected = currentScreen == AppScreen.PRICE_LIST,
                         onClick = {
+                            scope.launch { drawerState.close() }
+                            currentScreenName = AppScreen.PRICE_LIST.name
                             currentScreen = AppScreen.PRICE_LIST
                         }
                     )
@@ -122,6 +133,8 @@ fun App(
                         label = { Text("Настройки") },
                         selected = currentScreen == AppScreen.SETTINGS,
                         onClick = {
+                            scope.launch { drawerState.close() }
+                            currentScreenName = AppScreen.SETTINGS.name
                             currentScreen = AppScreen.SETTINGS
                         }
                     )
@@ -135,6 +148,7 @@ fun App(
                     onBack = {
                         dataGeneration++
                         patients = patientRepo.getAll()
+                        currentScreenName = AppScreen.PATIENTS.name
                         currentScreen = AppScreen.PATIENTS
                     },
                     onDataReloaded = { reloadPatients() }
@@ -150,7 +164,7 @@ fun App(
                             treatmentPlanRepository = treatmentPlanRepo,
                             visitPositionRepository = visitPositionRepo,
                             priceListRepository = priceListRepo,
-                            onBack = { selectedPatient = null }
+                            onBack = { selectedPatientId = -1L }
                         )
                     } else {
                         when (currentScreen) {
@@ -163,7 +177,7 @@ fun App(
                                     reloadPatients()
                                 },
                                 onReload = { reloadPatients() },
-                                onPatientClick = { selectedPatient = it }
+                                onPatientClick = { selectedPatientId = it.id }
                             )
                             }
                             AppScreen.PRICE_LIST -> PriceListScreen(priceListRepo)
