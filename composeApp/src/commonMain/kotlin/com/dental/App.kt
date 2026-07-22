@@ -33,6 +33,7 @@ import com.dental.ui.patient.PatientScreen
 import com.dental.ui.pricelist.PriceListScreen
 import com.dental.ui.settings.SettingsScreen
 import com.dental.ui.theme.DentalTheme
+import com.dental.ui.DentalLogoHeader
 
 @Composable
 fun App(
@@ -92,13 +93,15 @@ fun App(
                 ModalDrawerSheet(
                     modifier = Modifier.padding(start = 20.dp)
                 ) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "Стоматологическая клиника",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(16.dp)
+                    DentalLogoHeader(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp, bottom = 8.dp),
+                        surfaceColor = MaterialTheme.colorScheme.surface
                     )
-                    HorizontalDivider()
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                    Spacer(Modifier.height(8.dp))
 
                     NavigationDrawerItem(
                         icon = {
@@ -127,7 +130,6 @@ fun App(
                             currentScreen = AppScreen.PRICE_LIST
                         }
                     )
-                    HorizontalDivider()
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Settings, contentDescription = null) },
                         label = { Text("Настройки") },

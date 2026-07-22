@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo ============================================
-echo   DentalClinic - Стоматологическая клиника
+echo   DentalClinic - Кабинет Доктора Орлова
 echo ============================================
 echo.
 
