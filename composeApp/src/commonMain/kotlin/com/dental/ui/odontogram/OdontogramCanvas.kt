@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
@@ -42,7 +43,7 @@ private val GumRed = Color(0xFFE53935)
 private val BoneBeige = Color(0xFFD7CCC8)
 private val ImplantGray = Color(0xFF757575)
 private val DarkBlue = Color(0xFF1565C0)
-private val OutlineGray = Color(0xFFBDBDBD)
+private val OutlineGray = Color(0xFF616161)
 private val DarkOutline = Color(0xFF555555)
 private val PurpleFilling = Color(0xFFCE93D8)
 private val PerioRed = Color(0xFFEF5350)
@@ -76,7 +77,7 @@ internal val CrownOptionAbbreviations = mapOf(
     CrownOption.TEMPORARY to "ВК",
     CrownOption.ARTIFICIAL_MC to "ИМК",
     CrownOption.ARTIFICIAL_CAST to "ИЦЛ",
-    CrownOption.ARTIFICIAL_REMOVABLE to "ИП",
+    CrownOption.ARTIFICIAL_REMOVABLE to "И",
     CrownOption.PLOMBA to "П",
     CrownOption.MISSING to ""
 )
@@ -95,12 +96,15 @@ fun OdontogramLayers(
     upperTeeth: List<Int> = (18 downTo 11).toList() + (21..28).toList(),
     lowerTeeth: List<Int> = (48 downTo 41).toList() + (31..38).toList(),
     crownSelections: Map<Int, CrownOption> = emptyMap(),
-    rootSelections: Map<Int, RootOption> = emptyMap()
+    rootSelections: Map<Int, RootOption> = emptyMap(),
+    internalScroll: Boolean = true
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            .then(
+                if (internalScroll) Modifier.verticalScroll(rememberScrollState()) else Modifier
+            )
             .padding(vertical = 4.dp)
     ) {
         ToothNumbering(
@@ -118,10 +122,11 @@ fun OdontogramLayers(
             onToothClick = onToothClick,
             crownSelections = crownSelections,
             rootSelections = rootSelections,
+            isUpper = true,
             modifier = Modifier.fillMaxWidth().height(80.dp)
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(32.dp))
 
         ArchCanvas(
             teeth = teeth,
@@ -154,7 +159,8 @@ internal fun ArchCanvas(
     onToothClick: (Int, ToothPart?) -> Unit,
     modifier: Modifier = Modifier,
     crownSelections: Map<Int, CrownOption> = emptyMap(),
-    rootSelections: Map<Int, RootOption> = emptyMap()
+    rootSelections: Map<Int, RootOption> = emptyMap(),
+    isUpper: Boolean = false
 ) {
     var canvasPxSize by remember { mutableStateOf(IntSize.Zero) }
 
@@ -168,7 +174,11 @@ internal fun ArchCanvas(
                         val clickedTooth = toothAtPosition(offset.x, totalWidth, toothNumbers)
                         if (clickedTooth != null) {
                             val part = if (layerType == LayerType.ANATOMICAL) {
-                                if (offset.y < size.height * 0.45f) ToothPart.CROWN else ToothPart.ROOT
+                                if (isUpper) {
+                                    if (offset.y < size.height * 0.55f) ToothPart.ROOT else ToothPart.CROWN
+                                } else {
+                                    if (offset.y < size.height * 0.45f) ToothPart.CROWN else ToothPart.ROOT
+                                }
                             } else null
                             onToothClick(clickedTooth, part)
                         }
@@ -187,7 +197,8 @@ internal fun ArchCanvas(
                 height = size.height,
                 totalWidth = size.width,
                 crownSelections = crownSelections,
-                rootSelections = rootSelections
+                rootSelections = rootSelections,
+                isUpper = isUpper
             )
         }
 
@@ -198,8 +209,19 @@ internal fun ArchCanvas(
             val toothWidth = w / toothNumbers.size
             val padding = toothWidth * 0.1f
             val drawWidth = toothWidth - padding * 2
-            val crownH = h * 0.45f
-            val rootH = h - crownH
+
+            val crownH: Float
+            val rootH: Float
+            val crownY: Float
+            if (isUpper) {
+                rootH = h * 0.55f
+                crownH = h - rootH
+                crownY = rootH
+            } else {
+                crownH = h * 0.45f
+                rootH = h - crownH
+                crownY = 0f
+            }
 
             toothNumbers.forEachIndexed { index, number ->
                 val cx = index * toothWidth + padding + drawWidth / 2f
@@ -219,7 +241,7 @@ internal fun ArchCanvas(
                             .offset {
                                 IntOffset(
                                     (cx - abbrSize.width / 2f).toInt(),
-                                    ((crownH / 2f - abbrSize.height / 2f).toInt())
+                                    ((crownY + crownH / 2f - abbrSize.height / 2f).toInt())
                                 )
                             }
                     )
@@ -235,7 +257,8 @@ internal fun ArchCanvas(
                         else -> ""
                     }
                     val labelColor = Color(0xFF212121)
-                    val labelPos = getRootLabelPosition(cx, crownH, drawWidth, rootH, getToothType(number))
+                    val cervicalY = if (isUpper) rootH else crownH
+                    val labelPos = getRootLabelPosition(cx, cervicalY, drawWidth, rootH, getToothType(number), isUpper)
                     var labelSize by remember { mutableStateOf(IntSize.Zero) }
                     Text(
                         text = label,
@@ -264,13 +287,13 @@ private fun toothAtPosition(x: Float, totalWidth: Float, toothNumbers: List<Int>
     return toothNumbers[index]
 }
 
-private fun getRootLabelPosition(cx: Float, crownH: Float, w: Float, rootH: Float, toothType: ToothType): Offset {
-    val cervicalY = crownH
+private fun getRootLabelPosition(cx: Float, cervicalY: Float, w: Float, rootH: Float, toothType: ToothType, isUpper: Boolean = false): Offset {
+    val yOffset = if (isUpper) cervicalY - rootH * 0.18f else cervicalY + rootH * 0.18f
     return when (toothType) {
-        ToothType.UPPER_MOLAR -> Offset(cx, cervicalY + rootH * 0.18f)
-        ToothType.UPPER_PREMOLAR -> Offset(cx, cervicalY + rootH * 0.18f)
-        ToothType.LOWER_MOLAR -> Offset(cx + w * 0.08f, cervicalY + rootH * 0.18f)
-        else -> Offset(cx, cervicalY + rootH * 0.18f)
+        ToothType.UPPER_MOLAR -> Offset(cx, yOffset)
+        ToothType.UPPER_PREMOLAR -> Offset(cx, yOffset)
+        ToothType.LOWER_MOLAR -> Offset(cx + w * 0.08f, yOffset)
+        else -> Offset(cx, yOffset)
     }
 }
 
@@ -285,7 +308,8 @@ private fun DrawScope.drawArch(
     height: Float,
     totalWidth: Float,
     crownSelections: Map<Int, CrownOption>,
-    rootSelections: Map<Int, RootOption>
+    rootSelections: Map<Int, RootOption>,
+    isUpper: Boolean = false
 ) {
     if (toothNumbers.isEmpty()) return
     val toothWidth = totalWidth / toothNumbers.size
@@ -302,7 +326,7 @@ private fun DrawScope.drawArch(
         val toothPart: ToothPart? = if (isSelected) selectedToothPart else null
 
         when (layerType) {
-            LayerType.ANATOMICAL -> drawAnatomicalTooth(x, y, drawWidth, height, tooth, prosthetics, isSelected, crownOpt, rootOpt, toothPart)
+            LayerType.ANATOMICAL -> drawAnatomicalTooth(x, y, drawWidth, height, tooth, prosthetics, isSelected, crownOpt, rootOpt, toothPart, isUpper)
             LayerType.CROWNS -> drawCrownTooth(x, y, drawWidth, height, tooth, prosthetics, isSelected)
             LayerType.RESTORATIONS -> drawRestorationTooth(x, y, drawWidth, height, tooth, prosthetics, isSelected)
             LayerType.CONTOUR -> drawContourTooth(x, y, drawWidth, height, tooth, prosthetics, isSelected)
@@ -314,7 +338,8 @@ private fun DrawScope.drawAnatomicalTooth(
     x: Float, y: Float, w: Float, h: Float,
     tooth: Tooth?, prosthetics: List<ProstheticItem>, isSelected: Boolean,
     crownOption: CrownOption?, rootOption: RootOption?,
-    selectedPart: ToothPart? = null
+    selectedPart: ToothPart? = null,
+    isUpper: Boolean = false
 ) {
     val isMissing = tooth?.status == ToothStatus.MISSING
     val isImplant = tooth?.status == ToothStatus.IMPLANT
@@ -329,61 +354,92 @@ private fun DrawScope.drawAnatomicalTooth(
     val crownMissing = crownOption == CrownOption.MISSING
 
     val cx = x + w / 2
-    val crownH = h * 0.45f
-    val rootH = h - crownH
-    val cervicalY = y + crownH
+
+    val crownH: Float
+    val rootH: Float
+    val crownY: Float
+    val rootY: Float
+    val cervicalY: Float
+    val crownEndY: Float
+
+    if (isUpper) {
+        rootH = h * 0.55f
+        crownH = h - rootH
+        rootY = y
+        crownY = y + rootH
+        cervicalY = y + rootH
+        crownEndY = y + h
+    } else {
+        crownH = h * 0.45f
+        rootH = h - crownH
+        crownY = y
+        rootY = y + crownH
+        cervicalY = y + crownH
+        crownEndY = cervicalY
+    }
 
     // --- ROOT RENDERING ---
-    when (rootOption) {
-        RootOption.MISSING -> { /* skip roots */ }
+    val rootRenderBlock: DrawScope.() -> Unit = {
+        when (rootOption) {
+            RootOption.MISSING -> { /* skip roots */ }
 
-        RootOption.IMPLANT -> {
-            val implantWidth = w * 0.48f
-            val implantColor = Color(0xFF9C27B0)
-            drawRect(implantColor, topLeft = Offset(cx - implantWidth / 2, cervicalY + 3), size = Size(implantWidth, rootH - 6), style = Stroke(width = 2f))
-            for (i in 0..4) {
-                val ty = cervicalY + 6 + i * (rootH - 12) / 5
-                drawLine(implantColor, Offset(cx - implantWidth * 0.4f, ty), Offset(cx + implantWidth * 0.4f, ty), strokeWidth = 1f)
-            }
-        }
-
-        RootOption.ENDO_TREATED -> {
-            drawNormalRoots(cx, cervicalY, w, rootH, toothType, canalColor = Color(0xFF42A5F5), canalFraction = 1f)
-        }
-
-        RootOption.ENDO_PROBLEM -> {
-            drawNormalRoots(cx, cervicalY, w, rootH, toothType, canalColor = Color(0xFFEF5350), canalFraction = 0.5f)
-        }
-
-        RootOption.RETAINED -> {
-            drawNormalRoots(cx, cervicalY, w, rootH, toothType, rootFillColor = Color(0xFFEF9A9A))
-        }
-
-        RootOption.POST_CORE -> {
-            drawNormalRoots(cx, cervicalY, w, rootH, toothType)
-            drawPalatalRootFilled(cx, cervicalY, w, rootH, toothType, Color(0xFFBDBDBD))
-        }
-
-        RootOption.ANCHOR_PIN -> {
-            drawNormalRoots(cx, cervicalY, w, rootH, toothType)
-            drawPalatalRootFilled(cx, cervicalY, w, rootH, toothType, Color(0xFFFF9800))
-        }
-
-        else -> {
-            if (isImplant) {
-                drawRect(ImplantGray, topLeft = Offset(cx - w * 0.3f, cervicalY + 3), size = Size(w * 0.6f, rootH - 6), style = Stroke(width = 2f))
+            RootOption.IMPLANT -> {
+                val implantWidth = w * 0.48f
+                val implantColor = Color(0xFF9C27B0)
+                drawRect(implantColor, topLeft = Offset(cx - implantWidth / 2, cervicalY + 3), size = Size(implantWidth, rootH - 6), style = Stroke(width = 2f))
                 for (i in 0..4) {
                     val ty = cervicalY + 6 + i * (rootH - 12) / 5
-                    drawLine(ImplantGray, Offset(cx - w * 0.25f, ty), Offset(cx + w * 0.25f, ty), strokeWidth = 1f)
+                    drawLine(implantColor, Offset(cx - implantWidth * 0.4f, ty), Offset(cx + implantWidth * 0.4f, ty), strokeWidth = 1f)
                 }
-            } else {
+            }
+
+            RootOption.ENDO_TREATED -> {
+                drawNormalRoots(cx, cervicalY, w, rootH, toothType, canalColor = Color(0xFF42A5F5), canalFraction = 1f)
+            }
+
+            RootOption.ENDO_PROBLEM -> {
+                drawNormalRoots(cx, cervicalY, w, rootH, toothType, canalColor = Color(0xFFEF5350), canalFraction = 0.5f)
+            }
+
+            RootOption.RETAINED -> {
+                drawNormalRoots(cx, cervicalY, w, rootH, toothType, rootFillColor = Color(0xFFEF9A9A))
+            }
+
+            RootOption.POST_CORE -> {
                 drawNormalRoots(cx, cervicalY, w, rootH, toothType)
+                drawPalatalRootFilled(cx, cervicalY, w, rootH, toothType, Color(0xFFBDBDBD))
+            }
+
+            RootOption.ANCHOR_PIN -> {
+                drawNormalRoots(cx, cervicalY, w, rootH, toothType)
+                drawPalatalRootFilled(cx, cervicalY, w, rootH, toothType, Color(0xFFFF9800))
+            }
+
+            else -> {
+                if (isImplant) {
+                    drawRect(ImplantGray, topLeft = Offset(cx - w * 0.3f, cervicalY + 3), size = Size(w * 0.6f, rootH - 6), style = Stroke(width = 2f))
+                    for (i in 0..4) {
+                        val ty = cervicalY + 6 + i * (rootH - 12) / 5
+                        drawLine(ImplantGray, Offset(cx - w * 0.25f, ty), Offset(cx + w * 0.25f, ty), strokeWidth = 1f)
+                    }
+                } else {
+                    drawNormalRoots(cx, cervicalY, w, rootH, toothType)
+                }
             }
         }
     }
 
+    if (isUpper) {
+        withTransform({ scale(1f, -1f, pivot = Offset(cx, cervicalY)) }) {
+            rootRenderBlock()
+        }
+    } else {
+        rootRenderBlock()
+    }
+
     if (prosthetics.any { it.type == ProstheticType.POST_CORE }) {
-        drawRect(Color(0xFF9E9E9E), topLeft = Offset(cx - w * 0.08f, cervicalY + 3), size = Size(w * 0.16f, rootH * 0.45f))
+        val pcY = if (isUpper) rootY + 3 else cervicalY + 3
+        drawRect(Color(0xFF9E9E9E), topLeft = Offset(cx - w * 0.08f, pcY), size = Size(w * 0.16f, rootH * 0.45f))
     }
 
     // --- CROWN RENDERING ---
@@ -410,12 +466,20 @@ private fun DrawScope.drawAnatomicalTooth(
     }
 
     if (!crownMissing) {
-        drawCrownFill(cx, y, w, crownH, cervicalY, toothType, number, crownFill)
-        drawCrownOutline(cx, y, w, crownH, cervicalY, toothType, number, crownOutline)
+        if (isUpper) {
+            val crownCenterY = (crownY + crownEndY) / 2f
+            withTransform({ scale(1f, -1f, pivot = Offset(cx, crownCenterY)) }) {
+                drawCrownFill(cx, crownY, w, crownH, crownEndY, toothType, number, crownFill)
+                drawCrownOutline(cx, crownY, w, crownH, crownEndY, toothType, number, crownOutline)
+            }
+        } else {
+            drawCrownFill(cx, crownY, w, crownH, crownEndY, toothType, number, crownFill)
+            drawCrownOutline(cx, crownY, w, crownH, crownEndY, toothType, number, crownOutline)
+        }
     }
 
     // Dividing lines
-    val midCrownY = y + crownH * 0.5f
+    val midCrownY = crownY + crownH * 0.5f
     val dividePath = Path().apply {
         moveTo(cx - w * 0.35f, midCrownY)
         cubicTo(cx - w * 0.15f, midCrownY - 1f, cx + w * 0.15f, midCrownY - 1f, cx + w * 0.35f, midCrownY)
@@ -431,8 +495,8 @@ private fun DrawScope.drawAnatomicalTooth(
 
     if (isSelected) {
         when (selectedPart) {
-            ToothPart.CROWN -> drawRect(DarkBlue, topLeft = Offset(x, y), size = Size(w, crownH), style = Stroke(width = 2f))
-            ToothPart.ROOT -> drawRect(DarkBlue, topLeft = Offset(x, cervicalY), size = Size(w, rootH), style = Stroke(width = 2f))
+            ToothPart.CROWN -> drawRect(DarkBlue, topLeft = Offset(x, crownY), size = Size(w, crownH), style = Stroke(width = 2f))
+            ToothPart.ROOT -> drawRect(DarkBlue, topLeft = Offset(x, rootY), size = Size(w, rootH), style = Stroke(width = 2f))
             null -> drawRect(DarkBlue, topLeft = Offset(x, y), size = Size(w, h), style = Stroke(width = 2f))
         }
     }
@@ -657,7 +721,7 @@ private fun DrawScope.drawCrownOutline(
 ) {
     val dims = crownDimensions(w, crownH, toothType, number)
     val crownPath = buildCrownPath(cx, y, w, crownH, cervicalY, toothType, number, dims)
-    drawPath(crownPath, outlineColor, style = Stroke(width = 2f))
+    drawPath(crownPath, outlineColor, style = Stroke(width = 3f))
 }
 
 private data class CrownDims(

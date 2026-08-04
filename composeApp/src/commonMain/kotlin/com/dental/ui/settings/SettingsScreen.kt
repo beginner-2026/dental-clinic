@@ -25,7 +25,8 @@ fun SettingsScreen(
     backupManager: BackupManager,
     cloudSyncStorage: CloudSyncStorage,
     onBack: () -> Unit,
-    onDataReloaded: () -> Unit = {}
+    onDataReloaded: () -> Unit = {},
+    onMenuClick: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     var statusMessage by remember { mutableStateOf("") }
@@ -49,6 +50,11 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Меню")
                     }
                 }
             )
@@ -127,13 +133,28 @@ fun SettingsScreen(
                 )
             }
 
-            Button(
-                onClick = { pickFile() },
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.FolderOpen, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Выбрать файл синхронизации")
+                Button(
+                    onClick = { pickFile() },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.FolderOpen, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Выбрать файл")
+                }
+
+                Button(
+                    onClick = { cloudSyncStorage.openFolder() },
+                    modifier = Modifier.weight(1f),
+                    enabled = cloudSyncStorage.isConfigured
+                ) {
+                    Icon(Icons.Default.Folder, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Открыть папку")
+                }
             }
 
             Row(
@@ -146,6 +167,7 @@ fun SettingsScreen(
                             try {
                                 val json = backupManager.exportToJson()
                                 val ok = withContext(Dispatchers.IO) { cloudSyncStorage.save(json) }
+                                syncStatus = cloudSyncStorage.statusText()
                                 if (ok) showStatus("Данные отправлены в облако")
                                 else showStatus("Ошибка отправки в облако")
                             } catch (e: Exception) {
@@ -168,7 +190,8 @@ fun SettingsScreen(
                                 val json = withContext(Dispatchers.IO) { cloudSyncStorage.load() }
                                 if (json != null) {
                                     val data = jsonParser.decodeFromString<BackupData>(json)
-                                    showStatus("Загружено ${data.patients.size} пациентов из облака")
+                                    val deviceInfo = if (data.syncedByDevice != null) " (с устройства: ${data.syncedByDevice})" else ""
+                                    showStatus("Загружено ${data.patients.size} пациентов$deviceInfo")
                                     withContext(Dispatchers.IO) { backupManager.importFromJson(json) }
                                     onDataReloaded()
                                     onBack()

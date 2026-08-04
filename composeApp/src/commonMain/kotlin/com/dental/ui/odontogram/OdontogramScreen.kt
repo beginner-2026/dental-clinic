@@ -1,6 +1,7 @@
 package com.dental.ui.odontogram
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -152,7 +154,36 @@ fun OdontogramScreen(
             }
 
             // 4-Layer Odontogram Canvas (main content)
-            Box(modifier = Modifier.weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (state.viewMode == OdontogramViewMode.QUADRANT) {
+                            Modifier.pointerInput(state.currentQuadrant) {
+                                var accumulated = 0f
+                                detectHorizontalDragGestures(
+                                    onHorizontalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        accumulated += dragAmount
+                                    },
+                                    onDragEnd = {
+                                        if (accumulated < -80f) {
+                                            val next = if (state.currentQuadrant < 4) state.currentQuadrant + 1 else 1
+                                            viewModel.setQuadrant(next)
+                                        } else if (accumulated > 80f) {
+                                            val prev = if (state.currentQuadrant > 1) state.currentQuadrant - 1 else 4
+                                            viewModel.setQuadrant(prev)
+                                        }
+                                        accumulated = 0f
+                                    },
+                                    onDragCancel = { accumulated = 0f }
+                                )
+                            }
+                        } else {
+                            Modifier
+                        }
+                    )
+            ) {
                 if (state.currentPatientId == null) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -227,7 +258,8 @@ fun OdontogramScreen(
             part = state.selectedToothPart!!,
             onDismiss = { viewModel.dismissPartMenu() },
             onApplyCrown = { option -> viewModel.applyCrownOption(state.selectedTooth!!, option) },
-            onApplyRoot = { option -> viewModel.applyRootOption(state.selectedTooth!!, option) }
+            onApplyRoot = { option -> viewModel.applyRootOption(state.selectedTooth!!, option) },
+            onApplyIntact = { viewModel.clearToothOptions(state.selectedTooth!!) }
         )
     }
 
@@ -244,7 +276,8 @@ fun OdontogramScreen(
                 viewModel.applyProsthetic(type, material, stage)
             },
             onToggleBridgeMode = { viewModel.toggleBridgeMode() },
-            onChangeToothStatus = { status -> viewModel.setToothStatus(state.selectedTooth!!, status) }
+            onChangeToothStatus = { status -> viewModel.setToothStatus(state.selectedTooth!!, status) },
+            onMakeToothIntact = { viewModel.makeToothIntact() }
         )
     }
 

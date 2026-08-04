@@ -279,6 +279,60 @@ class OdontogramViewModel(
         )
     }
 
+    fun clearToothOptions(number: Int) {
+        val s = _state.value
+        val updatedTeeth = s.teeth.map { tooth ->
+            if (tooth.number == number) tooth.copy(crownOption = null, rootOption = null) else tooth
+        }
+        _state.value = s.copy(
+            teeth = updatedTeeth,
+            crownSelections = s.crownSelections - number,
+            rootSelections = s.rootSelections - number,
+            showToothPartMenu = false,
+            selectedTooth = null,
+            selectedToothPart = null
+        )
+        val pid = s.currentPatientId
+        if (pid != null && toothRepository != null) {
+            val tooth = updatedTeeth.find { it.number == number }
+            if (tooth != null) {
+                toothRepository.saveTooth(tooth)
+            }
+        }
+    }
+
+    fun makeToothIntact() {
+        val s = _state.value
+        val toothNumber = s.selectedTooth ?: return
+        val pid = s.currentPatientId ?: return
+        s.prostheticItems.filter { toothNumber in it.toothIds }.forEach { item ->
+            if (item.id != 0L) toothRepository?.deleteProstheticItem(item.id)
+        }
+        val updatedTeeth = s.teeth.map { tooth ->
+            if (tooth.number == toothNumber) {
+                tooth.copy(status = ToothStatus.PRESENT, crownOption = null, rootOption = null)
+            } else {
+                tooth
+            }
+        }
+        _state.value = s.copy(
+            teeth = updatedTeeth,
+            prostheticItems = s.prostheticItems.filterNot { toothNumber in it.toothIds },
+            crownSelections = s.crownSelections - toothNumber,
+            rootSelections = s.rootSelections - toothNumber,
+            showToothMenu = false,
+            selectedTooth = null,
+            bridgeMode = false,
+            bridgeFirstTooth = null,
+            bridgeSecondTooth = null
+        )
+        val repo = toothRepository ?: return
+        val tooth = updatedTeeth.find { it.number == toothNumber }
+        if (tooth != null) {
+            repo.saveTooth(tooth)
+        }
+    }
+
     fun undo() {
         val s = _state.value
         if (s.undoStack.isEmpty()) return

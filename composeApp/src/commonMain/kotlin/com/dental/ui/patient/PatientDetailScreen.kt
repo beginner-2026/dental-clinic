@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
@@ -26,16 +27,19 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.dental.PlatformBackHandler
 import com.dental.data.DiagnosisRepository
 import com.dental.data.InvoiceCalculator
 import com.dental.data.InvoiceRepository
 import com.dental.data.TreatmentPlanRepository
 import com.dental.data.PriceListRepository
 import com.dental.data.VisitPositionRepository
+import com.dental.getPlatformName
 import com.dental.model.*
 import com.dental.ui.diagnosis.DiagnosisEditorScreen
 import kotlinx.datetime.*
@@ -81,13 +85,17 @@ fun PatientDetailScreen(
     treatmentPlanRepository: TreatmentPlanRepository,
     visitPositionRepository: VisitPositionRepository,
     priceListRepository: PriceListRepository,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onMenuClick: () -> Unit = {}
 ) {
     val state by odontogramViewModel.state.collectAsState()
     var isQuadrantView by rememberSaveable { mutableStateOf(false) }
-    var showFullPriceList by rememberSaveable { mutableStateOf(false) }
+    val isAndroid = getPlatformName() == "Android"
 
     var currentInvoice by remember { mutableStateOf<Invoice?>(null) }
+    var savedInvoice by remember { mutableStateOf<Invoice?>(null) }
+    var showUnsavedInvoiceDialog by remember { mutableStateOf(false) }
+    val invoiceDirty = currentInvoice != savedInvoice
     var allInvoices by remember { mutableStateOf<List<Invoice>>(emptyList()) }
     var showInvoiceEditor by rememberSaveable { mutableStateOf(false) }
     var discountInput by rememberSaveable { mutableStateOf("0") }
@@ -115,6 +123,8 @@ fun PatientDetailScreen(
     }
 
     fun loadAllPositions() {
+        visitPositionRepository.ensurePosition("Перебазировка протеза")
+        visitPositionRepository.ensurePosition("Оплата")
         allPositions = visitPositionRepository.getAllPositions()
     }
 
@@ -144,6 +154,7 @@ fun PatientDetailScreen(
             currentInvoice = Invoice(patientId = patient.id)
             discountInput = "0"
         }
+        savedInvoice = currentInvoice
     }
 
     fun updateInvoice(newInvoice: Invoice) {
@@ -154,6 +165,14 @@ fun PatientDetailScreen(
         allInvoices = invoiceRepository.getAllByPatient(patient.id)
     }
 
+    PlatformBackHandler(enabled = true, onBack = {
+        if (invoiceDirty) {
+            showUnsavedInvoiceDialog = true
+        } else {
+            onBack()
+        }
+    })
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -162,8 +181,19 @@ fun PatientDetailScreen(
             TopAppBar(
                 title = { Text("${patient.lastName} ${patient.firstName}") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        if (invoiceDirty) {
+                            showUnsavedInvoiceDialog = true
+                        } else {
+                            onBack()
+                        }
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Меню")
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -268,7 +298,12 @@ fun PatientDetailScreen(
                                             )
                                         }
                                         Box(
-                                            modifier = Modifier.fillMaxWidth().height(240.dp).padding(horizontal = 8.dp)
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .then(
+                                                    if (!isAndroid) Modifier.height(240.dp) else Modifier
+                                                )
+                                                .padding(horizontal = 8.dp)
                                         ) {
                                             if (isQuadrantView) {
                                                 QuadrantOdontogram(
@@ -280,6 +315,7 @@ fun PatientDetailScreen(
                                                     onToothClick = { number, part -> odontogramViewModel.selectTooth(number, part) },
                                                     crownSelections = state.crownSelections,
                                                     rootSelections = state.rootSelections,
+                                                    internalScroll = !isAndroid,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
                                             } else {
@@ -292,24 +328,9 @@ fun PatientDetailScreen(
                                                     onToothClick = { number, part -> odontogramViewModel.selectTooth(number, part) },
                                                     crownSelections = state.crownSelections,
                                                     rootSelections = state.rootSelections,
+                                                    internalScroll = !isAndroid,
                                                     modifier = Modifier.fillMaxSize()
                                                 )
-                                            }
-                                        }
-                                        Spacer(Modifier.height(8.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                                            horizontalArrangement = Arrangement.End
-                                        ) {
-                                            Button(
-                                                onClick = {
-                                                    odontogramViewModel.saveAll()
-                                                },
-                                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
-                                            ) {
-                                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                                                Spacer(Modifier.width(6.dp))
-                                                Text("Сохранить зубную формулу")
                                             }
                                         }
                                     }
@@ -457,6 +478,7 @@ fun PatientDetailScreen(
                                                         loadAllInvoices()
                                                         val saved = allInvoices.firstOrNull { it.id == savedId }
                                                         updateInvoice(saved ?: toSave.copy(id = savedId))
+                                                        savedInvoice = saved ?: toSave.copy(id = savedId)
                                                         showInvoiceEditor = false
                                                     }
                                                 )
@@ -467,11 +489,16 @@ fun PatientDetailScreen(
                                                 invoices = allInvoices,
                                                 onNewInvoice = {
                                                     currentInvoice = Invoice(patientId = patient.id)
+                                                    savedInvoice = Invoice(patientId = patient.id)
                                                     discountInput = "0"
                                                     showInvoiceEditor = true
                                                     showPriceListDialog = true
                                                 },
-                                                onRefresh = { loadAllInvoices() }
+                                                onRefresh = { loadAllInvoices() },
+                                                onMarkPaid = { inv ->
+                                                    invoiceRepository.updateStatus(inv.id, InvoiceStatus.PAID)
+                                                    loadAllInvoices()
+                                                }
                                             )
                                         }
                                     }
@@ -481,15 +508,6 @@ fun PatientDetailScreen(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(
-                onClick = { showFullPriceList = true },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
-            ) {
-                Icon(Icons.Default.MonetizationOn, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Прейскурант")
-            }
             Spacer(Modifier.height(8.dp))
     }
 
@@ -526,7 +544,8 @@ fun PatientDetailScreen(
             part = state.selectedToothPart!!,
             onDismiss = { odontogramViewModel.dismissPartMenu() },
             onApplyCrown = { option -> odontogramViewModel.applyCrownOption(state.selectedTooth!!, option) },
-            onApplyRoot = { option -> odontogramViewModel.applyRootOption(state.selectedTooth!!, option) }
+            onApplyRoot = { option -> odontogramViewModel.applyRootOption(state.selectedTooth!!, option) },
+            onApplyIntact = { odontogramViewModel.clearToothOptions(state.selectedTooth!!) }
         )
     }
 
@@ -543,7 +562,8 @@ fun PatientDetailScreen(
                 odontogramViewModel.applyProsthetic(type, material, stage)
             },
             onToggleBridgeMode = { odontogramViewModel.toggleBridgeMode() },
-            onChangeToothStatus = { status -> odontogramViewModel.setToothStatus(state.selectedTooth!!, status) }
+            onChangeToothStatus = { status -> odontogramViewModel.setToothStatus(state.selectedTooth!!, status) },
+            onMakeToothIntact = { odontogramViewModel.makeToothIntact() }
         )
     }
 
@@ -566,25 +586,6 @@ fun PatientDetailScreen(
                 showPriceListDialog = false
             }
         )
-    }
-
-    if (showFullPriceList) {
-        Dialog(onDismissRequest = { showFullPriceList = false }) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                shape = MaterialTheme.shapes.large,
-                tonalElevation = 6.dp,
-                shadowElevation = 8.dp
-            ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-                        Text("Прейскурант", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { showFullPriceList = false }) { Text("Готово") }
-                    }
-                    PriceListTabContent(repository = priceListRepository, modifier = Modifier.heightIn(max = 400.dp))
-                }
-            }
-        }
     }
 
     if (showEditInvoiceDialog) {
@@ -610,6 +611,41 @@ fun PatientDetailScreen(
         )
     }
 
+    if (showUnsavedInvoiceDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedInvoiceDialog = false },
+            title = { Text("Сохранить изменения?") },
+            text = { Text("Внесённые изменения не сохранены. Сохранить их перед выходом?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val toSave = currentInvoice
+                        if (toSave != null) {
+                            val savedId = invoiceRepository.save(InvoiceCalculator.recalculate(toSave))
+                            loadAllInvoices()
+                            val saved = allInvoices.firstOrNull { it.id == savedId }
+                            updateInvoice(saved ?: toSave.copy(id = savedId))
+                            savedInvoice = saved ?: toSave.copy(id = savedId)
+                        }
+                        showUnsavedInvoiceDialog = false
+                        onBack()
+                    }
+                ) { Text("Сохранить") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showUnsavedInvoiceDialog = false
+                            onBack()
+                        }
+                    ) { Text("Не сохранять") }
+                    TextButton(onClick = { showUnsavedInvoiceDialog = false }) { Text("Отмена") }
+                }
+            }
+        )
+    }
+
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
@@ -623,6 +659,7 @@ fun PatientDetailScreen(
                             invoiceRepository.delete(inv.id)
                         }
                         updateInvoice(Invoice(patientId = patient.id))
+                        savedInvoice = Invoice(patientId = patient.id)
                         discountInput = "0"
                         showDeleteConfirm = false
                     },
@@ -871,7 +908,8 @@ private fun InvoiceHistoryView(
     key: Int = 0,
     invoices: List<Invoice>,
     onNewInvoice: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
+    onMarkPaid: (Invoice) -> Unit
 ) {
     var expandedId by rememberSaveable { mutableStateOf<Long?>(null) }
 
@@ -900,10 +938,14 @@ private fun InvoiceHistoryView(
         } else {
             invoices.forEach { inv ->
                 val isExpanded = expandedId == inv.id
+                val isPaid = inv.status == InvoiceStatus.PAID
+                val paidGreen = Color(0xFF2E7D32)
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
                         .clickable { expandedId = if (isExpanded) null else inv.id },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isPaid) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface
+                    )
                 ) {
                     Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                         Row(
@@ -914,13 +956,28 @@ private fun InvoiceHistoryView(
                                 Text(
                                     text = "Счёт №${inv.id} от ${formatVisitDate(inv.dateCreated)}",
                                     style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isPaid) paidGreen else MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = "${inv.items.size} поз. · ${formatPrice(inv.totalAfterDiscount)}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = if (isPaid) paidGreen else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                            }
+                            if (isPaid) {
+                                Text(
+                                    text = "Оплачен",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = paidGreen
+                                )
+                            } else {
+                                Button(
+                                    onClick = { onMarkPaid(inv) }
+                                ) {
+                                    Text("Оплачен")
+                                }
                             }
                             if (inv.items.isNotEmpty()) {
                                 Icon(
@@ -956,7 +1013,7 @@ private fun InvoiceHistoryView(
                                     text = "Итого: ${formatPrice(inv.totalAfterDiscount)}",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = if (isPaid) paidGreen else MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -1410,10 +1467,31 @@ private fun AddVisitDialog(
     onConfirm: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDateMillis
-    )
-    val selectedDate = datePickerState.selectedDateMillis
+    val timeZone = TimeZone.currentSystemDefault()
+    val initialDate = remember(initialDateMillis) {
+        Instant.fromEpochMilliseconds(initialDateMillis).toLocalDateTime(timeZone).date
+    }
+    var selectedDate by remember { mutableStateOf(initialDate) }
+    var visibleMonth by remember { mutableStateOf(initialDate) }
+
+    val monthStart = remember(visibleMonth) { LocalDate(visibleMonth.year, visibleMonth.monthNumber, 1) }
+    val daysInMonth = remember(visibleMonth) {
+        monthStart.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY).dayOfMonth
+    }
+    val firstWeekdayOffset = monthStart.dayOfWeek.value - 1
+    val monthName = remember(visibleMonth) {
+        listOf(
+            "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+            "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+        )[visibleMonth.monthNumber - 1]
+    }
+    val monthCells = remember(visibleMonth) {
+        val cells = mutableListOf<LocalDate?>()
+        repeat(firstWeekdayOffset) { cells.add(null) }
+        for (day in 1..daysInMonth) cells.add(LocalDate(visibleMonth.year, visibleMonth.monthNumber, day))
+        while (cells.size % 7 != 0) cells.add(null)
+        cells
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1421,41 +1499,93 @@ private fun AddVisitDialog(
             tonalElevation = 6.dp,
             shadowElevation = 8.dp
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Добавить посещение",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (selectedDate != null) {
-                        Button(
-                            onClick = { onConfirm(selectedDate) },
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
-                        ) {
-                            Text("Сохранить")
-                        }
-                    }
-                }
+            Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+                Text(
+                    "Добавить посещение",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
 
-                Spacer(Modifier.height(16.dp))
-
+                Spacer(Modifier.height(8.dp))
                 Text(
                     "Дата посещения",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
-                DatePicker(
-                    state = datePickerState,
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    title = null,
-                    headline = null,
-                    showModeToggle = true
-                )
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {
+                            visibleMonth = visibleMonth.minus(1, DateTimeUnit.MONTH)
+                        }
+                    ) {
+                        Icon(Icons.Default.ChevronLeft, contentDescription = "Предыдущий месяц")
+                    }
+                    Text(
+                        text = "$monthName ${visibleMonth.year}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = {
+                            visibleMonth = visibleMonth.plus(1, DateTimeUnit.MONTH)
+                        }
+                    ) {
+                        Icon(Icons.Default.ChevronRight, contentDescription = "Следующий месяц")
+                    }
+                }
+
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    listOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс").forEach { day ->
+                        Text(
+                            text = day,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                monthCells.chunked(7).forEach { week ->
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        week.forEach { date ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(38.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (date != null) {
+                                    val isSelected = date == selectedDate
+                                    Surface(
+                                        onClick = { selectedDate = date },
+                                        shape = CircleShape,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                        modifier = Modifier.size(34.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = date.dayOfMonth.toString(),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -1466,11 +1596,22 @@ private fun AddVisitDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Text("Отмена")
+                    OutlinedButton(onClick = onDismiss) {
+                        Text("Отмена")
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Button(
+                        onClick = {
+                            onConfirm(selectedDate.atStartOfDayIn(timeZone).toEpochMilliseconds())
+                        }
+                    ) {
+                        Text("Сохранить")
+                    }
                 }
             }
         }

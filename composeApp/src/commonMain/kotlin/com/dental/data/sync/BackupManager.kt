@@ -1,6 +1,8 @@
 package com.dental.data.sync
 
 import com.dental.data.db.DentalDatabase
+import com.dental.getPlatformName
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -110,6 +112,9 @@ class BackupManager(private val database: DentalDatabase) {
         }
 
         return BackupData(
+            version = 2,
+            lastSyncedAt = Clock.System.now().toEpochMilliseconds(),
+            syncedByDevice = getPlatformName(),
             patients = patients, appointments = appointments, teeth = teeth,
             prostheticItems = prostheticItems, diagnoses = diagnoses,
             treatmentPlans = treatmentPlans, visits = visits,
@@ -218,6 +223,10 @@ class BackupManager(private val database: DentalDatabase) {
     fun importFromJson(jsonString: String) {
         val data = json.decodeFromString<BackupData>(jsonString)
         importFromData(data)
+    }
+
+    fun parseMetadata(jsonString: String): BackupData {
+        return json.decodeFromString<BackupData>(jsonString)
     }
 
     private fun clearAllData() {

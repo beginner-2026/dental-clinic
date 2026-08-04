@@ -38,7 +38,7 @@ internal val crownOptionsList = listOf(
     CrownOptionInfo(CrownOption.FULL_CERAMIC, "Цельнокерамическая коронка", "ЦК", Color(0xFF8BC34A)),
     CrownOptionInfo(CrownOption.IMPLANT_CROWN, "Коронка на имплантате", "КИМ", Color(0xFF9C27B0)),
     CrownOptionInfo(CrownOption.TEMPORARY, "Временная коронка", "ВК", Color(0xFFFF9800)),
-    CrownOptionInfo(CrownOption.ARTIFICIAL_REMOVABLE, "Зуб в Съёмном протезе", "ИП", Color(0xFFFF80AB)),
+    CrownOptionInfo(CrownOption.ARTIFICIAL_REMOVABLE, "Зуб в Съёмном протезе", "И", Color(0xFFFF80AB)),
     CrownOptionInfo(CrownOption.PLOMBA, "Пломба", "П", Color(0xFFCE93D8)),
     CrownOptionInfo(CrownOption.MISSING, "Зуб отсутствует", "", Color(0xFFE0E0E0))
 )
@@ -60,7 +60,8 @@ fun ToothPartSheet(
     part: ToothPart,
     onDismiss: () -> Unit,
     onApplyCrown: (CrownOption) -> Unit,
-    onApplyRoot: (RootOption) -> Unit
+    onApplyRoot: (RootOption) -> Unit,
+    onApplyIntact: () -> Unit = {}
 ) {
     var selectedCrown by remember { mutableStateOf<CrownOption?>(null) }
     var selectedRoot by remember { mutableStateOf<RootOption?>(null) }
@@ -114,6 +115,22 @@ fun ToothPartSheet(
 
             Spacer(Modifier.height(4.dp))
 
+            OutlinedButton(
+                onClick = onApplyIntact,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF2E7D32)
+                )
+            ) {
+                Text(
+                    text = if (part == ToothPart.CROWN) "Интактный зуб (без коронки и пломб)" else "Интактный корень",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(Modifier.height(4.dp))
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -121,52 +138,30 @@ fun ToothPartSheet(
                     .verticalScroll(rememberScrollState())
             ) {
                 if (part == ToothPart.CROWN) {
-                    val chunks = crownOptionsList.chunked(2)
-                    chunks.forEach { pair ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            pair.forEach { item ->
-                                CompactOption(
-                                    label = item.label,
-                                    abbreviation = item.abbreviation,
-                                    color = item.color,
-                                    isSelected = selectedCrown == item.option,
-                                    onSelect = {
-                                        selectedCrown = if (selectedCrown == item.option) null else item.option
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (pair.size < 2) {
-                                Spacer(Modifier.weight(1f))
-                            }
-                        }
+                    crownOptionsList.forEach { item ->
+                        CompactOption(
+                            label = item.label,
+                            abbreviation = item.abbreviation,
+                            color = item.color,
+                            isSelected = selectedCrown == item.option,
+                            onSelect = {
+                                selectedCrown = if (selectedCrown == item.option) null else item.option
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 } else {
-                    val chunks = rootOptionsList.chunked(2)
-                    chunks.forEach { pair ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            pair.forEach { item ->
-                                CompactOption(
-                                    label = item.label,
-                                    abbreviation = item.abbreviation,
-                                    color = item.color,
-                                    isSelected = selectedRoot == item.option,
-                                    onSelect = {
-                                        selectedRoot = if (selectedRoot == item.option) null else item.option
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (pair.size < 2) {
-                                Spacer(Modifier.weight(1f))
-                            }
-                        }
+                    rootOptionsList.forEach { item ->
+                        CompactOption(
+                            label = item.label,
+                            abbreviation = item.abbreviation,
+                            color = item.color,
+                            isSelected = selectedRoot == item.option,
+                            onSelect = {
+                                selectedRoot = if (selectedRoot == item.option) null else item.option
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
@@ -213,7 +208,7 @@ private fun CompactOption(
                 text = label,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 1
+                modifier = Modifier.weight(1f)
             )
         }
     }

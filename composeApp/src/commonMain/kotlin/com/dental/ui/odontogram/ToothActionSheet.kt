@@ -3,6 +3,8 @@ package com.dental.ui.odontogram
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,7 +49,8 @@ fun ToothActionSheet(
     onDismiss: () -> Unit,
     onSelectProsthetic: (ProstheticType, ProstheticMaterial, ProstheticStage) -> Unit,
     onToggleBridgeMode: () -> Unit,
-    onChangeToothStatus: (ToothStatus) -> Unit
+    onChangeToothStatus: (ToothStatus) -> Unit,
+    onMakeToothIntact: () -> Unit = {}
 ) {
     val existing = existingProsthetics.firstOrNull { it.toothIds.contains(toothNumber) }
 
@@ -77,6 +80,21 @@ fun ToothActionSheet(
 
             Text("Выберите конструкцию:", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = {
+                    onMakeToothIntact()
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF2E7D32)
+                )
+            ) {
+                Icon(Icons.Default.FavoriteBorder, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Интактный зуб (без конструкций)", fontWeight = FontWeight.SemiBold)
+            }
 
             constructionTypes.forEach { item ->
                 ElevatedButton(

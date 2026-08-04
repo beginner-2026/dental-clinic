@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,41 +38,53 @@ fun DiagnosisEditorScreen(
     var checkedItems by remember { mutableStateOf(initialChecked) }
     var toothNumbers by remember { mutableStateOf<Map<String, String?>>(initialToothNumbers) }
 
+    val isDirty = checkedItems != initialChecked || toothNumbers != initialToothNumbers
+
+    fun buildDiagnoses(): List<Diagnosis> {
+        return PREDEFINED_DIAGNOSES
+            .filter { it.text in checkedItems }
+            .map { pred ->
+                Diagnosis(
+                    patientId = patientId,
+                    code = pred.code,
+                    diagnosisText = pred.text,
+                    toothNumber = toothNumbers[pred.text]
+                )
+            }
+    }
+
+    var showUnsavedDialog by remember { mutableStateOf(false) }
+
+    fun requestExit() {
+        if (isDirty) {
+            showUnsavedDialog = true
+        } else {
+            onBack()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Редактор диагнозов") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { requestExit() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
-                },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            val diagnoses = PREDEFINED_DIAGNOSES
-                                .filter { it.text in checkedItems }
-                                .map { pred ->
-                                    Diagnosis(
-                                        patientId = patientId,
-                                        code = pred.code,
-                                        diagnosisText = pred.text,
-                                        toothNumber = toothNumbers[pred.text]
-                                    )
-                                }
-                            onSave(diagnoses)
-                        }
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Сохранить")
-                    }
                 }
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { onSave(buildDiagnoses()) },
+                icon = { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                text = { Text("Сохранить") }
             )
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding)
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(bottom = 88.dp)
         ) {
             item {
                 Row(
@@ -110,7 +123,8 @@ fun DiagnosisEditorScreen(
                         singleLine = true,
                         enabled = isChecked,
                         placeholder = { Text("№", fontSize = 12.sp) },
-                        textStyle = MaterialTheme.typography.bodySmall
+                        textStyle = MaterialTheme.typography.bodySmall,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
 
                     Spacer(Modifier.width(4.dp))
@@ -148,5 +162,33 @@ fun DiagnosisEditorScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             }
         }
+    }
+
+    if (showUnsavedDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedDialog = false },
+            title = { Text("Сохранить изменения?") },
+            text = { Text("Внесённые изменения не сохранены. Сохранить их перед выходом?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUnsavedDialog = false
+                        onSave(buildDiagnoses())
+                        onBack()
+                    }
+                ) { Text("Сохранить") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showUnsavedDialog = false
+                            onBack()
+                        }
+                    ) { Text("Не сохранять") }
+                    TextButton(onClick = { showUnsavedDialog = false }) { Text("Отмена") }
+                }
+            }
+        )
     }
 }

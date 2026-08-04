@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,7 +26,8 @@ fun PatientScreen(
     onAddPatient: () -> Unit,
     onDeletePatient: (Long) -> Unit,
     onReload: () -> Unit,
-    onPatientClick: (Patient) -> Unit = {}
+    onPatientClick: (Patient) -> Unit = {},
+    onMenuClick: () -> Unit = {}
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf<Patient?>(null) }
@@ -37,6 +39,9 @@ fun PatientScreen(
             TopAppBar(
                 title = { Text("Пациенты") },
                 actions = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Меню")
+                    }
                     IconButton(onClick = { deleteMode = !deleteMode }) {
                         Icon(
                             Icons.Default.Delete,

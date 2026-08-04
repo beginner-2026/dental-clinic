@@ -3,6 +3,7 @@ package com.dental.ui.treatmentplan
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -11,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dental.model.PREDEFINED_PROCEDURES
@@ -34,40 +36,47 @@ fun TreatmentPlanEditorScreen(
     var checkedItems by remember { mutableStateOf(initialChecked) }
     var toothNumbers by remember { mutableStateOf(initialToothNumbers) }
 
+    val isDirty = checkedItems != initialChecked || toothNumbers != initialToothNumbers
+
+    fun buildItems(): List<TreatmentPlanItem> {
+        return PREDEFINED_PROCEDURES
+            .filter { it.text in checkedItems }
+            .map { pred ->
+                TreatmentPlanItem(
+                    patientId = patientId,
+                    toothNumbers = toothNumbers[pred.text] ?: "",
+                    procedure = pred.text
+                )
+            }
+    }
+
+    var showUnsavedDialog by remember { mutableStateOf(false) }
+
+    fun requestExit() {
+        if (isDirty) {
+            showUnsavedDialog = true
+        } else {
+            onBack()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Редактор плана лечения") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { requestExit() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            val items = PREDEFINED_PROCEDURES
-                                .filter { it.text in checkedItems }
-                                .map { pred ->
-                                    TreatmentPlanItem(
-                                        patientId = patientId,
-                                        toothNumbers = toothNumbers[pred.text] ?: "",
-                                        procedure = pred.text
-                                    )
-                                }
-                            onSave(items)
-                        }
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Сохранить")
                     }
                 }
             )
         }
     ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 72.dp)
         ) {
             item {
                 Row(
@@ -106,7 +115,8 @@ fun TreatmentPlanEditorScreen(
                         singleLine = true,
                         enabled = isChecked,
                         placeholder = { Text("№", fontSize = 12.sp) },
-                        textStyle = MaterialTheme.typography.bodyMedium
+                        textStyle = MaterialTheme.typography.bodyMedium,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
 
                     Spacer(Modifier.width(4.dp))
@@ -135,5 +145,48 @@ fun TreatmentPlanEditorScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             }
         }
+
+        Button(
+            onClick = {
+                onSave(buildItems())
+                onBack()
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Сохранить")
+        }
+        }
+    }
+
+    if (showUnsavedDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedDialog = false },
+            title = { Text("Сохранить изменения?") },
+            text = { Text("Внесённые изменения не сохранены. Сохранить их перед выходом?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUnsavedDialog = false
+                        onSave(buildItems())
+                        onBack()
+                    }
+                ) { Text("Сохранить") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showUnsavedDialog = false
+                            onBack()
+                        }
+                    ) { Text("Не сохранять") }
+                    TextButton(onClick = { showUnsavedDialog = false }) { Text("Отмена") }
+                }
+            }
+        )
     }
 }

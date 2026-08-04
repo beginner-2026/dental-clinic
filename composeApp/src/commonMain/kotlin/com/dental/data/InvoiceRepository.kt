@@ -88,6 +88,14 @@ class InvoiceRepository(db: DentalDatabase) {
         }
     }
 
+    fun updateStatus(invoiceId: Long, status: InvoiceStatus) {
+        queries.updateInvoiceStatus(
+            status = status.name,
+            dateUpdated = Clock.System.now().toEpochMilliseconds(),
+            id = invoiceId
+        )
+    }
+
     private fun InvoiceEntity.toInvoice(items: List<InvoiceItem>): Invoice {
         return Invoice(
             id = id,

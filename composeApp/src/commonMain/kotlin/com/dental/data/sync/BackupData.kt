@@ -4,7 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BackupData(
-    val version: Int = 1,
+    val version: Int = 2,
+    val lastSyncedAt: Long? = null,
+    val syncedByDevice: String? = null,
     val patients: List<BackupPatient> = emptyList(),
     val appointments: List<BackupAppointment> = emptyList(),
     val teeth: List<BackupTooth> = emptyList(),

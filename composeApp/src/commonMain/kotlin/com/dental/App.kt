@@ -1,17 +1,24 @@
 package com.dental
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MonetizationOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import com.dental.data.AppointmentRepository
 import com.dental.data.DatabaseDriverFactory
 import com.dental.data.DiagnosisRepository
@@ -33,7 +40,12 @@ import com.dental.ui.patient.PatientScreen
 import com.dental.ui.pricelist.PriceListScreen
 import com.dental.ui.settings.SettingsScreen
 import com.dental.ui.theme.DentalTheme
-import com.dental.ui.DentalLogoHeader
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import org.jetbrains.compose.resources.painterResource
+import dentalclinic.composeapp.generated.resources.*
+
+const val APP_VERSION = "1.1.0"
 
 @Composable
 fun App(
@@ -52,10 +64,11 @@ fun App(
     val visitPositionRepo = remember { VisitPositionRepository(database) }
     val priceListRepo = remember { PriceListRepository(database) }
 
-    var currentScreenName by rememberSaveable { mutableStateOf(AppScreen.PATIENTS.name) }
-    var currentScreen by remember(currentScreenName) { mutableStateOf(AppScreen.valueOf(currentScreenName)) }
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
+    var currentScreenStack by rememberSaveable {
+        mutableStateOf(listOf(AppScreen.PATIENTS.name))
+    }
+    val currentScreen = AppScreen.valueOf(currentScreenStack.last())
+    var drawerOpen by rememberSaveable { mutableStateOf(false) }
 
     var dataGeneration by remember { mutableIntStateOf(0) }
     var patients by remember { mutableStateOf(patientRepo.getAll()) }
@@ -64,21 +77,45 @@ fun App(
         dataGeneration++
     }
 
+    fun navigateTo(screen: AppScreen) {
+        if (currentScreenStack.last() != screen.name) {
+            currentScreenStack = currentScreenStack + screen.name
+        }
+    }
+
+    fun navigateHome() {
+        currentScreenStack = listOf(AppScreen.PATIENTS.name)
+        reloadPatients()
+    }
+
+    fun navigateBack() {
+        if (currentScreenStack.size > 1) {
+            currentScreenStack = currentScreenStack.dropLast(1)
+        }
+    }
+
     LaunchedEffect(Unit) {
         SeedData.seedIfEmpty(database)
         if (priceListRepo.getAll().none { it.name == "Перебазировка протеза" }) {
             priceListRepo.create("Пользовательские услуги", "Перебазировка протеза", 6000_00)
         }
-        if (visitPositionRepo.getAllPositions().none { it.name == "Перебазировка протеза" }) {
-            val maxOrder = visitPositionRepo.getAllPositions().maxOfOrNull { it.sortOrder } ?: 0
-            visitPositionRepo.createPosition("Перебазировка протеза", maxOrder + 1)
-        }
+        visitPositionRepo.ensurePosition("Перебазировка протеза")
+        visitPositionRepo.ensurePosition("Оплата")
         reloadPatients()
     }
 
     var selectedPatientId by rememberSaveable { mutableStateOf(-1L) }
     val selectedPatient = patients.find { it.id == selectedPatientId }
     val odontogramViewModel = remember { OdontogramViewModel(toothRepo) }
+
+    val canGoBackBySystem = selectedPatientId == -1L && currentScreenStack.size > 1
+    PlatformBackHandler(enabled = drawerOpen || canGoBackBySystem) {
+        if (drawerOpen) {
+            drawerOpen = false
+        } else {
+            navigateBack()
+        }
+    }
 
     var showAddPatientDialog by rememberSaveable { mutableStateOf(false) }
     var newPatientLastName by rememberSaveable { mutableStateOf("") }
@@ -87,17 +124,97 @@ fun App(
     var newPatientPhone by rememberSaveable { mutableStateOf("") }
 
     DentalTheme {
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            drawerContent = {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .swipeFromRightEdgeToOpen { drawerOpen = true }
+            ) {
+                when (currentScreen) {
+                    AppScreen.SETTINGS -> SettingsScreen(
+                        backupManager = backupManager,
+                        cloudSyncStorage = cloudSyncStorage,
+                        onBack = {
+                            navigateHome()
+                        },
+                        onDataReloaded = { reloadPatients() },
+                        onMenuClick = { drawerOpen = true }
+                    )
+                    else -> {
+                        val currentPatient = selectedPatient
+                        if (currentPatient != null) {
+                            PatientDetailScreen(
+                                patient = currentPatient,
+                                odontogramViewModel = odontogramViewModel,
+                                invoiceRepository = invoiceRepo,
+                                diagnosisRepository = diagnosisRepo,
+                                treatmentPlanRepository = treatmentPlanRepo,
+                                visitPositionRepository = visitPositionRepo,
+                                priceListRepository = priceListRepo,
+                                onBack = { selectedPatientId = -1L },
+                                onMenuClick = { drawerOpen = true }
+                            )
+                        } else {
+                            when (currentScreen) {
+                                AppScreen.PATIENTS -> key(dataGeneration) {
+                                    PatientScreen(
+                                        patients = patients,
+                                        onAddPatient = { showAddPatientDialog = true },
+                                        onDeletePatient = { id ->
+                                            patientRepo.delete(id)
+                                            reloadPatients()
+                                        },
+                                        onReload = { reloadPatients() },
+                                        onPatientClick = { selectedPatientId = it.id },
+                                        onMenuClick = { drawerOpen = true }
+                                    )
+                                }
+                                AppScreen.PRICE_LIST -> PriceListScreen(
+                                    priceListRepo,
+                                    onMenuClick = { drawerOpen = true }
+                                )
+                                AppScreen.SETTINGS -> { /* handled above */ }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (drawerOpen) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .clickable { drawerOpen = false }
+                )
+            }
+
+            AnimatedVisibility(
+                visible = drawerOpen,
+                enter = slideInHorizontally(initialOffsetX = { it }),
+                exit = slideOutHorizontally(targetOffsetX = { it }),
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
                 ModalDrawerSheet(
-                    modifier = Modifier.padding(start = 20.dp)
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(300.dp)
+                        .swipeRightToClose { drawerOpen = false }
                 ) {
-                    DentalLogoHeader(
+                    Image(
+                        painter = painterResource(Res.drawable.background),
+                        contentDescription = "Логотип",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 12.dp, bottom = 8.dp),
-                        surfaceColor = MaterialTheme.colorScheme.surface
+                            .padding(top = 12.dp, bottom = 4.dp)
+                            .height(100.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                    Text(
+                        text = "Версия $APP_VERSION",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, bottom = 8.dp)
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
@@ -105,87 +222,52 @@ fun App(
 
                     NavigationDrawerItem(
                         icon = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(-4.dp))
-                                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp))
-                            }
+                            Image(
+                                painter = painterResource(Res.drawable.patients),
+                                contentDescription = null,
+                                modifier = Modifier.size(26.dp),
+                                contentScale = ContentScale.Fit
+                            )
                         },
                         label = { Text("Пациенты") },
                         selected = currentScreen == AppScreen.PATIENTS,
                         onClick = {
-                            scope.launch { drawerState.close() }
-                            currentScreenName = AppScreen.PATIENTS.name
-                            currentScreen = AppScreen.PATIENTS
-                            reloadPatients()
+                            drawerOpen = false
+                            navigateHome()
                         }
                     )
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.MonetizationOn, contentDescription = null) },
+                        icon = {
+                            Image(
+                                painter = painterResource(Res.drawable.price),
+                                contentDescription = null,
+                                modifier = Modifier.size(26.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        },
                         label = { Text("Прейскурант") },
                         selected = currentScreen == AppScreen.PRICE_LIST,
                         onClick = {
-                            scope.launch { drawerState.close() }
-                            currentScreenName = AppScreen.PRICE_LIST.name
-                            currentScreen = AppScreen.PRICE_LIST
+                            drawerOpen = false
+                            navigateTo(AppScreen.PRICE_LIST)
                         }
                     )
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                        icon = {
+                            Image(
+                                painter = painterResource(Res.drawable.settings),
+                                contentDescription = null,
+                                modifier = Modifier.size(26.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        },
                         label = { Text("Настройки") },
                         selected = currentScreen == AppScreen.SETTINGS,
                         onClick = {
-                            scope.launch { drawerState.close() }
-                            currentScreenName = AppScreen.SETTINGS.name
-                            currentScreen = AppScreen.SETTINGS
+                            drawerOpen = false
+                            navigateTo(AppScreen.SETTINGS)
                         }
                     )
-                }
-            }
-        ) {
-            when (currentScreen) {
-                AppScreen.SETTINGS -> SettingsScreen(
-                    backupManager = backupManager,
-                    cloudSyncStorage = cloudSyncStorage,
-                    onBack = {
-                        dataGeneration++
-                        patients = patientRepo.getAll()
-                        currentScreenName = AppScreen.PATIENTS.name
-                        currentScreen = AppScreen.PATIENTS
-                    },
-                    onDataReloaded = { reloadPatients() }
-                )
-                else -> {
-                    val currentPatient = selectedPatient
-                    if (currentPatient != null) {
-                        PatientDetailScreen(
-                            patient = currentPatient,
-                            odontogramViewModel = odontogramViewModel,
-                            invoiceRepository = invoiceRepo,
-                            diagnosisRepository = diagnosisRepo,
-                            treatmentPlanRepository = treatmentPlanRepo,
-                            visitPositionRepository = visitPositionRepo,
-                            priceListRepository = priceListRepo,
-                            onBack = { selectedPatientId = -1L }
-                        )
-                    } else {
-                        when (currentScreen) {
-                            AppScreen.PATIENTS -> key(dataGeneration) {
-                                PatientScreen(
-                                patients = patients,
-                                onAddPatient = { showAddPatientDialog = true },
-                                onDeletePatient = { id ->
-                                    patientRepo.delete(id)
-                                    reloadPatients()
-                                },
-                                onReload = { reloadPatients() },
-                                onPatientClick = { selectedPatientId = it.id }
-                            )
-                            }
-                            AppScreen.PRICE_LIST -> PriceListScreen(priceListRepo)
-                            AppScreen.SETTINGS -> { /* handled above */ }
-                        }
-                    }
                 }
             }
         }
@@ -208,7 +290,8 @@ fun App(
                         onValueChange = { newPatientLastName = it },
                         label = { Text("Фамилия *") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -216,7 +299,8 @@ fun App(
                         onValueChange = { newPatientFirstName = it },
                         label = { Text("Имя *") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -224,7 +308,8 @@ fun App(
                         onValueChange = { newPatientMiddleName = it },
                         label = { Text("Отчество") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
                     )
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -232,7 +317,8 @@ fun App(
                         onValueChange = { newPatientPhone = it },
                         label = { Text("Телефон") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
                     )
                 }
             },
@@ -268,6 +354,54 @@ fun App(
                     newPatientPhone = ""
                 }) { Text("Отмена") }
             }
+        )
+    }
+}
+
+@Composable
+private fun Modifier.swipeFromRightEdgeToOpen(onOpen: () -> Unit): Modifier {
+    val edgeWidthPx = with(LocalDensity.current) { 32.dp.toPx() }
+    return this.pointerInput(Unit) {
+        val edgeWidth = edgeWidthPx
+        var fromRightEdge = false
+        var accumulated = 0f
+        detectHorizontalDragGestures(
+            onDragStart = { offset ->
+                fromRightEdge = offset.x >= size.width - edgeWidth
+                accumulated = 0f
+            },
+            onHorizontalDrag = { change, dragAmount ->
+                if (fromRightEdge) {
+                    change.consume()
+                    accumulated += dragAmount
+                }
+            },
+            onDragEnd = {
+                if (fromRightEdge && accumulated < -80f) {
+                    onOpen()
+                }
+                fromRightEdge = false
+            },
+            onDragCancel = { fromRightEdge = false }
+        )
+    }
+}
+
+private fun Modifier.swipeRightToClose(onClose: () -> Unit): Modifier {
+    return this.pointerInput(Unit) {
+        var accumulated = 0f
+        detectHorizontalDragGestures(
+            onHorizontalDrag = { change, dragAmount ->
+                change.consume()
+                accumulated += dragAmount
+            },
+            onDragEnd = {
+                if (accumulated > 80f) {
+                    onClose()
+                }
+                accumulated = 0f
+            },
+            onDragCancel = { accumulated = 0f }
         )
     }
 }

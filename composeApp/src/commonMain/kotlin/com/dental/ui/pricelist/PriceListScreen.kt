@@ -21,7 +21,7 @@ import com.dental.model.PriceListItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PriceListScreen(repository: PriceListRepository) {
+fun PriceListScreen(repository: PriceListRepository, onMenuClick: () -> Unit = {}) {
     var searchQuery by remember { mutableStateOf("") }
     var items by remember { mutableStateOf<List<PriceListItem>>(emptyList()) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -58,6 +58,9 @@ fun PriceListScreen(repository: PriceListRepository) {
                 title = { Text("Прейскурант") },
                 scrollBehavior = scrollBehavior,
                 actions = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Меню")
+                    }
                     IconButton(onClick = { deleteMode = !deleteMode }) {
                         Icon(
                             if (deleteMode) Icons.Default.DeleteSweep else Icons.Default.Delete,

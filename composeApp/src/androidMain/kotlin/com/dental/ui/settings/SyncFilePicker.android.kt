@@ -23,5 +23,5 @@ actual fun rememberSyncFilePickerLauncher(
             onSelected(uri.toString())
         }
     }
-    return { launcher.launch("dental-clinic-sync.json") }
+    return { launcher.launch("sync.json") }
 }

@@ -43,16 +43,24 @@
 ## Синхронизация и резервное копирование
 
 - **BackupManager** (`commonMain`): экспорт всех таблиц БД в `BackupData` (JSON) и импорт обратно
+  - `exportAll()` проставляет `lastSyncedAt` (текущий timestamp) и `syncedByDevice` (`getPlatformName()`)
 - **BackupStorage** (expect/actual): сохранение/загрузка JSON-файла на устройстве
   - Desktop: `~/.dental-clinic/backups/backup_<timestamp>.json`
   - Android: `context.filesDir/backups/backup_<timestamp>.json`
-- **SyncServer** (`desktopMain`): Ktor Netty-сервер на порту 9876, эндпоинты:
-  - `GET /api/sync/ping` — проверка доступности
-  - `POST /api/sync/pull` — получить все данные с сервера
-  - `POST /api/sync/push` — отправить данные на сервер
-- **SyncClient** (`commonMain`): Ktor-клиент для подключения к SyncServer
-- **platformStartSyncServer** (expect/actual): автоматический запуск сервера на Desktop (Android — no-op)
-- **Экран Settings**: создание/восстановление бэкапа (JSON), Push/Pull синхронизация с сервером
+- **CloudSyncStorage** (expect/actual): синхронизация JSON-файла через облачные хранилища
+  - **Desktop** (`CloudSyncStorage.desktop.kt`):
+    - Автодетект: `~/Google Drive`, `~/My Drive`, `~/OneDrive`, `~/Dropbox`, `~/Yandex.Disk`
+    - Также проверяет диски `G:`, `H:`, `I:`, `J:`, `K:` для `My Drive`/`Google Drive`
+    - Если не найдено — использует `~/.dental-clinic/cloud-sync/`
+    - Файл: `sync.json` в папке `DentalClinic/`
+    - `openFolder()` — открывает папку в проводнике через `Desktop.getDesktop().open()`
+  - **Android** (`CloudSyncStorage.android.kt`):
+    - Использует SAF через `ContentResolver` (файл по URI из SharedPreferences)
+    - `SyncFilePicker` использует `ActivityResultContracts.CreateDocument("application/json")` с `takePersistableUriPermission`
+    - На Android SAF-пикер поддерживает Google Drive нативно
+  - **Общие методы**: `save()`, `load()`, `statusText()`, `isConfigured`, `configure(path)`, `getLastSyncTimestamp()`, `getDeviceName()`, `openFolder()`
+- **BackupData** (`BackupData.kt`): `version = 2`, добавлены поля `lastSyncedAt: Long?` и `syncedByDevice: String?`
+- **Экран Settings**: создание/восстановление бэкапа (JSON), Push/Pull синхронизация с облаком, кнопка «Открыть папку»
 
 ## Зависимости (новые)
 

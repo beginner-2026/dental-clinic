@@ -21,6 +21,14 @@ class VisitPositionRepository(private val db: DentalDatabase) {
         return queries.getLastInsertId().executeAsOne()
     }
 
+    fun ensurePosition(name: String): Position {
+        val existing = getAllPositions().firstOrNull { it.name == name }
+        if (existing != null) return existing
+        val maxOrder = getAllPositions().maxOfOrNull { it.sortOrder } ?: 0
+        val id = createPosition(name, maxOrder + 1)
+        return Position(id = id, name = name, sortOrder = maxOrder + 1)
+    }
+
     fun getPositionById(id: Long): Position? {
         return queries.getPositionById(id).executeAsOneOrNull()?.toPosition()
     }

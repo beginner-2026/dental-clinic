@@ -6,4 +6,7 @@ expect class CloudSyncStorage() {
     fun statusText(): String
     val isConfigured: Boolean
     fun configure(path: String)
+    fun getLastSyncTimestamp(): Long?
+    fun getDeviceName(): String?
+    fun openFolder()
 }

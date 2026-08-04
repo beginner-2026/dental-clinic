@@ -41,6 +41,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.activity.compose)
+            implementation(libs.androidx.core.splashscreen)
             implementation(libs.sqldelight.android.driver)
         }
 
@@ -61,8 +62,8 @@ android {
         applicationId = "com.dental.clinic"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
     }
 
     buildTypes {
