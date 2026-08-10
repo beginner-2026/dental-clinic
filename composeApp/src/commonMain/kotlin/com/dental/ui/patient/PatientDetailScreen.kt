@@ -102,6 +102,7 @@ fun PatientDetailScreen(
     var showPriceListDialog by rememberSaveable { mutableStateOf(false) }
     var showEditInvoiceDialog by rememberSaveable { mutableStateOf(false) }
     var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
+    var invoiceToDelete by remember { mutableStateOf<Invoice?>(null) }
 
     var diagnoses by remember { mutableStateOf<List<Diagnosis>>(emptyList()) }
     var showDiagnosisEditor by rememberSaveable { mutableStateOf(false) }
@@ -173,10 +174,20 @@ fun PatientDetailScreen(
         }
     })
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    // На десктопе нет системной кнопки «назад», поэтому верхняя панель с кнопкой
+    // «назад» должна оставаться видимой при прокрутке (иначе нельзя вернуться к списку)
+    val scrollBehavior = if (!isAndroid) {
+        null
+    } else {
+        TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = if (scrollBehavior != null) {
+            Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        } else {
+            Modifier
+        },
         topBar = {
             TopAppBar(
                 title = { Text("${patient.lastName} ${patient.firstName}") },
@@ -464,43 +475,56 @@ fun PatientDetailScreen(
                                     "Счёт" -> {
                                         if (showInvoiceEditor) {
                                             currentInvoice?.let { inv ->
-                                                InvoiceTabContent(
-                                                    invoice = inv,
-                                                    discountInput = discountInput,
-                                                    onDiscountInputChange = { discountInput = it },
-                                                    onInvoiceUpdate = { updateInvoice(it) },
-                                                    onOpenPriceList = { showPriceListDialog = true },
-                                                    onEditInvoice = { showEditInvoiceDialog = true },
-                                                    onDeleteInvoiceClick = { showDeleteConfirm = true },
-                                                    onSave = {
-                                                        val toSave = currentInvoice ?: return@InvoiceTabContent
-                                                        val savedId = invoiceRepository.save(InvoiceCalculator.recalculate(toSave))
-                                                        loadAllInvoices()
-                                                        val saved = allInvoices.firstOrNull { it.id == savedId }
-                                                        updateInvoice(saved ?: toSave.copy(id = savedId))
-                                                        savedInvoice = saved ?: toSave.copy(id = savedId)
-                                                        showInvoiceEditor = false
-                                                    }
-                                                )
-                                            }
-                                        } else {
-                                            InvoiceHistoryView(
-                                                key = allInvoices.size,
-                                                invoices = allInvoices,
-                                                onNewInvoice = {
-                                                    currentInvoice = Invoice(patientId = patient.id)
-                                                    savedInvoice = Invoice(patientId = patient.id)
-                                                    discountInput = "0"
-                                                    showInvoiceEditor = true
-                                                    showPriceListDialog = true
+                                            InvoiceTabContent(
+                                                invoice = inv,
+                                                discountInput = discountInput,
+                                                onDiscountInputChange = { discountInput = it },
+                                                onInvoiceUpdate = { updateInvoice(it) },
+                                                onOpenPriceList = { showPriceListDialog = true },
+                                                onEditInvoice = { showEditInvoiceDialog = true },
+                                                onDeleteInvoiceClick = {
+                                                    invoiceToDelete = currentInvoice
+                                                    showDeleteConfirm = true
                                                 },
-                                                onRefresh = { loadAllInvoices() },
-                                                onMarkPaid = { inv ->
-                                                    invoiceRepository.updateStatus(inv.id, InvoiceStatus.PAID)
+                                                onSave = {
+                                                    val toSave = currentInvoice ?: return@InvoiceTabContent
+                                                    val savedId = invoiceRepository.save(InvoiceCalculator.recalculate(toSave))
                                                     loadAllInvoices()
+                                                    val saved = allInvoices.firstOrNull { it.id == savedId }
+                                                    updateInvoice(saved ?: toSave.copy(id = savedId))
+                                                    savedInvoice = saved ?: toSave.copy(id = savedId)
+                                                    showInvoiceEditor = false
                                                 }
                                             )
                                         }
+                                    } else {
+                                        InvoiceHistoryView(
+                                            key = allInvoices.size,
+                                            invoices = allInvoices,
+                                            onNewInvoice = {
+                                                currentInvoice = Invoice(patientId = patient.id)
+                                                savedInvoice = Invoice(patientId = patient.id)
+                                                discountInput = "0"
+                                                showInvoiceEditor = true
+                                                showPriceListDialog = true
+                                            },
+                                            onRefresh = { loadAllInvoices() },
+                                            onEditInvoice = { inv ->
+                                                currentInvoice = inv
+                                                discountInput = inv.discountPercent.toString()
+                                                savedInvoice = inv
+                                                showInvoiceEditor = true
+                                            },
+                                            onDeleteInvoice = { inv ->
+                                                invoiceToDelete = inv
+                                                showDeleteConfirm = true
+                                            },
+                                            onMarkPaid = { inv ->
+                                                invoiceRepository.updateStatus(inv.id, InvoiceStatus.PAID)
+                                                loadAllInvoices()
+                                            }
+                                        )
+                                    }
                                     }
                                 }
                         }
@@ -647,27 +671,38 @@ fun PatientDetailScreen(
     }
 
     if (showDeleteConfirm) {
+        val invToDelete = invoiceToDelete ?: currentInvoice
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
+            onDismissRequest = {
+                showDeleteConfirm = false
+                invoiceToDelete = null
+            },
             title = { Text("Удалить счёт") },
-            text = { Text("Вы уверены, что хотите удалить этот счёт? Все позиции будут удалены.") },
+            text = { Text("Вы уверены, что хотите удалить счёт №${if (invToDelete?.id != 0L) invToDelete?.id else ""}? Все позиции будут удалены.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val inv = currentInvoice
+                        val inv = invoiceToDelete ?: currentInvoice
                         if (inv != null && inv.id != 0L) {
                             invoiceRepository.delete(inv.id)
                         }
-                        updateInvoice(Invoice(patientId = patient.id))
-                        savedInvoice = Invoice(patientId = patient.id)
-                        discountInput = "0"
+                        if (inv?.id == currentInvoice?.id) {
+                            updateInvoice(Invoice(patientId = patient.id))
+                            savedInvoice = Invoice(patientId = patient.id)
+                            discountInput = "0"
+                        }
+                        invoiceToDelete = null
                         showDeleteConfirm = false
+                        loadAllInvoices()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
                 ) { Text("Удалить") }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Отмена") }
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    invoiceToDelete = null
+                }) { Text("Отмена") }
             }
         )
     }
@@ -909,6 +944,8 @@ private fun InvoiceHistoryView(
     invoices: List<Invoice>,
     onNewInvoice: () -> Unit,
     onRefresh: () -> Unit,
+    onEditInvoice: (Invoice) -> Unit,
+    onDeleteInvoice: (Invoice) -> Unit,
     onMarkPaid: (Invoice) -> Unit
 ) {
     var expandedId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -978,6 +1015,18 @@ private fun InvoiceHistoryView(
                                 ) {
                                     Text("Оплачен")
                                 }
+                            }
+                            IconButton(
+                                onClick = { onEditInvoice(inv) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Редактировать счёт", modifier = Modifier.size(20.dp))
+                            }
+                            IconButton(
+                                onClick = { onDeleteInvoice(inv) },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Удалить счёт", tint = Color.Red, modifier = Modifier.size(20.dp))
                             }
                             if (inv.items.isNotEmpty()) {
                                 Icon(

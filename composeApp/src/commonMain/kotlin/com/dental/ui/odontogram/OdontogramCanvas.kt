@@ -247,13 +247,14 @@ internal fun ArchCanvas(
                     )
                 }
 
-                // Root label (КВ / АШ / РЕТ)
+                // Root label (КВ / АШ / РЕТ / ПП)
                 val rootOpt = rootSelections[number]
-                if (rootOpt == RootOption.POST_CORE || rootOpt == RootOption.ANCHOR_PIN || rootOpt == RootOption.RETAINED) {
+                if (rootOpt == RootOption.POST_CORE || rootOpt == RootOption.ANCHOR_PIN || rootOpt == RootOption.RETAINED || rootOpt == RootOption.PERIO_PROBLEM) {
                     val label = when (rootOpt) {
                         RootOption.POST_CORE -> "КВ"
                         RootOption.ANCHOR_PIN -> "АШ"
                         RootOption.RETAINED -> "РЕТ"
+                        RootOption.PERIO_PROBLEM -> "ПП"
                         else -> ""
                     }
                     val labelColor = Color(0xFF212121)
@@ -399,6 +400,12 @@ private fun DrawScope.drawAnatomicalTooth(
 
             RootOption.ENDO_PROBLEM -> {
                 drawNormalRoots(cx, cervicalY, w, rootH, toothType, canalColor = Color(0xFFEF5350), canalFraction = 0.5f)
+            }
+
+            RootOption.PERIO_PROBLEM -> {
+                drawNormalRoots(cx, cervicalY, w, rootH, toothType, rootFillColor = PerioRed.copy(alpha = 0.3f))
+                val dashed = Stroke(width = 1.5f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 3f), 0f))
+                drawRect(Color(0xFFE53935), topLeft = Offset(cx - w * 0.42f, cervicalY + 2), size = Size(w * 0.84f, rootH - 4), style = dashed)
             }
 
             RootOption.RETAINED -> {

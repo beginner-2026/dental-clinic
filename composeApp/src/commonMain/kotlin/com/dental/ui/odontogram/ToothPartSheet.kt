@@ -32,6 +32,7 @@ internal data class RootOptionInfo(
 )
 
 internal val crownOptionsList = listOf(
+    CrownOptionInfo(CrownOption.MISSING, "Зуб отсутствует", "", Color(0xFFE0E0E0)),
     CrownOptionInfo(CrownOption.METAL_CERAMIC, "Металлокерамическая коронка", "МК", Color(0xFF4CAF50)),
     CrownOptionInfo(CrownOption.CAST_SOLID, "Цельнолитая коронка", "ЦЛ", Color(0xFF424242)),
     CrownOptionInfo(CrownOption.ZIRCONIUM_OXIDE, "Оксид циркониевая коронка", "ОЦ", Color(0xFF03A9F4)),
@@ -39,18 +40,18 @@ internal val crownOptionsList = listOf(
     CrownOptionInfo(CrownOption.IMPLANT_CROWN, "Коронка на имплантате", "КИМ", Color(0xFF9C27B0)),
     CrownOptionInfo(CrownOption.TEMPORARY, "Временная коронка", "ВК", Color(0xFFFF9800)),
     CrownOptionInfo(CrownOption.ARTIFICIAL_REMOVABLE, "Зуб в Съёмном протезе", "И", Color(0xFFFF80AB)),
-    CrownOptionInfo(CrownOption.PLOMBA, "Пломба", "П", Color(0xFFCE93D8)),
-    CrownOptionInfo(CrownOption.MISSING, "Зуб отсутствует", "", Color(0xFFE0E0E0))
+    CrownOptionInfo(CrownOption.PLOMBA, "Пломба", "П", Color(0xFFCE93D8))
 )
 
 internal val rootOptionsList = listOf(
+    RootOptionInfo(RootOption.MISSING, "Корень отсутствует", "", Color(0xFFE0E0E0)),
     RootOptionInfo(RootOption.POST_CORE, "Культевая вкладка", "КВ", Color(0xFF616161)),
     RootOptionInfo(RootOption.ANCHOR_PIN, "Анкерный штифт", "АШ", Color(0xFFFF9800)),
     RootOptionInfo(RootOption.ENDO_TREATED, "Эндодонтически пролеченный зуб", "", Color(0xFF42A5F5)),
     RootOptionInfo(RootOption.ENDO_PROBLEM, "Эндодонтическая проблема", "", Color(0xFFEF5350)),
+    RootOptionInfo(RootOption.PERIO_PROBLEM, "Пародонтологическая проблема", "ПП", Color(0xFFE53935)),
     RootOptionInfo(RootOption.IMPLANT, "Имплантат", "", Color(0xFF9C27B0)),
-    RootOptionInfo(RootOption.RETAINED, "Ретинированный зуб", "РЕТ", Color(0xFFEF9A9A)),
-    RootOptionInfo(RootOption.MISSING, "Корень отсутствует", "", Color(0xFFE0E0E0))
+    RootOptionInfo(RootOption.RETAINED, "Ретинированный зуб", "РЕТ", Color(0xFFEF9A9A))
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

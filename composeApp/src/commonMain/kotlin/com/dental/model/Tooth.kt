@@ -76,6 +76,7 @@ enum class RootOption {
     ANCHOR_PIN,
     ENDO_TREATED,
     ENDO_PROBLEM,
+    PERIO_PROBLEM,
     IMPLANT,
     RETAINED,
     MISSING
