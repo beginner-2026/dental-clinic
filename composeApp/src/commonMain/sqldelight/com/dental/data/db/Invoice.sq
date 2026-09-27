@@ -56,6 +56,12 @@ DELETE FROM InvoiceItemEntity WHERE id = ?;
 deleteItemsByInvoiceId:
 DELETE FROM InvoiceItemEntity WHERE invoiceId = ?;
 
+deleteItemsByPatientId:
+DELETE FROM InvoiceItemEntity WHERE invoiceId IN (SELECT id FROM InvoiceEntity WHERE patientId = ?);
+
+deleteInvoicesByPatientId:
+DELETE FROM InvoiceEntity WHERE patientId = ?;
+
 updateInvoice:
 UPDATE InvoiceEntity SET dateUpdated = ?, status = ?, discountPercent = ?, totalBeforeDiscount = ?, discountAmount = ?, totalAfterDiscount = ? WHERE id = ?;
 

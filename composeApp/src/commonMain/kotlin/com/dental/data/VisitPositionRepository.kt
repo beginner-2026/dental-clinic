@@ -29,6 +29,24 @@ class VisitPositionRepository(private val db: DentalDatabase) {
         return Position(id = id, name = name, sortOrder = maxOrder + 1)
     }
 
+    fun ensurePositionsOrder(desiredOrder: List<String>) {
+        queries.transaction {
+            val current = queries.getAllPositions().executeAsList().associateBy { it.name }.toMutableMap()
+            desiredOrder.forEachIndexed { index, name ->
+                val existing = current[name]
+                if (existing == null) {
+                    queries.insertPosition(name = name, sortOrder = index.toLong())
+                    val newId = queries.getLastInsertId().executeAsOne()
+                    val inserted = queries.getPositionById(newId).executeAsOne()
+                    current[name] = inserted
+                } else if (existing.sortOrder != index.toLong()) {
+                    queries.insertPositionWithId(id = existing.id, name = existing.name, sortOrder = index.toLong())
+                    current[name] = existing.copy(sortOrder = index.toLong())
+                }
+            }
+        }
+    }
+
     fun getPositionById(id: Long): Position? {
         return queries.getPositionById(id).executeAsOneOrNull()?.toPosition()
     }

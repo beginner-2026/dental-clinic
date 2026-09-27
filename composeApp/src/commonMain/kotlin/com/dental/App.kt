@@ -33,6 +33,7 @@ import com.dental.data.db.DentalDatabase
 import com.dental.data.sync.BackupManager
 import com.dental.data.sync.CloudSyncStorage
 import com.dental.model.*
+import com.dental.ui.home.HomeScreen
 import com.dental.ui.navigation.AppScreen
 import com.dental.ui.odontogram.OdontogramViewModel
 import com.dental.ui.patient.PatientDetailScreen
@@ -64,8 +65,9 @@ fun App(
     val visitPositionRepo = remember { VisitPositionRepository(database) }
     val priceListRepo = remember { PriceListRepository(database) }
 
+    var blockingOperation by remember { mutableStateOf(false) }
     var currentScreenStack by rememberSaveable {
-        mutableStateOf(listOf(AppScreen.PATIENTS.name))
+        mutableStateOf(listOf(AppScreen.HOME.name))
     }
     val currentScreen = AppScreen.valueOf(currentScreenStack.last())
     var drawerOpen by rememberSaveable { mutableStateOf(false) }
@@ -99,8 +101,7 @@ fun App(
         if (priceListRepo.getAll().none { it.name == "Перебазировка протеза" }) {
             priceListRepo.create("Пользовательские услуги", "Перебазировка протеза", 6000_00)
         }
-        visitPositionRepo.ensurePosition("Перебазировка протеза")
-        visitPositionRepo.ensurePosition("Оплата")
+        visitPositionRepo.ensurePositionsOrder(SeedData.POSITION_NAMES)
         reloadPatients()
     }
 
@@ -109,11 +110,11 @@ fun App(
     val odontogramViewModel = remember { OdontogramViewModel(toothRepo) }
 
     val canGoBackBySystem = selectedPatientId == -1L && currentScreenStack.size > 1
-    PlatformBackHandler(enabled = drawerOpen || canGoBackBySystem) {
-        if (drawerOpen) {
-            drawerOpen = false
-        } else {
-            navigateBack()
+    PlatformBackHandler(enabled = blockingOperation || drawerOpen || canGoBackBySystem) {
+        when {
+            blockingOperation -> Unit
+            drawerOpen -> drawerOpen = false
+            else -> navigateBack()
         }
     }
 
@@ -131,6 +132,9 @@ fun App(
                     .swipeFromRightEdgeToOpen { drawerOpen = true }
             ) {
                 when (currentScreen) {
+                    AppScreen.HOME -> HomeScreen(
+                        onLogoClick = { navigateTo(AppScreen.PATIENTS) }
+                    )
                     AppScreen.SETTINGS -> SettingsScreen(
                         backupManager = backupManager,
                         cloudSyncStorage = cloudSyncStorage,
@@ -138,7 +142,8 @@ fun App(
                             navigateHome()
                         },
                         onDataReloaded = { reloadPatients() },
-                        onMenuClick = { drawerOpen = true }
+                        onMenuClick = { drawerOpen = true },
+                        onBusyChanged = { blockingOperation = it }
                     )
                     else -> {
                         val currentPatient = selectedPatient
@@ -174,6 +179,7 @@ fun App(
                                     onMenuClick = { drawerOpen = true }
                                 )
                                 AppScreen.SETTINGS -> { /* handled above */ }
+                                AppScreen.HOME -> { /* handled above */ }
                             }
                         }
                     }

@@ -37,7 +37,18 @@ class PatientRepository(private val db: DentalDatabase) {
     }
 
     fun delete(id: Long) {
-        queries.deleteById(id)
+        db.transaction {
+            db.visitPositionQueries.deleteVisitPositionsByPatientId(id)
+            db.invoiceQueries.deleteItemsByPatientId(id)
+            db.appointmentQueries.deleteByPatientId(id)
+            db.toothQueries.deleteByPatientId(id)
+            db.prostheticItemQueries.deleteByPatientId(id)
+            db.diagnosisQueries.deleteByPatientId(id)
+            db.treatmentPlanQueries.deleteByPatientId(id)
+            db.visitPositionQueries.deleteVisitsByPatientId(id)
+            db.invoiceQueries.deleteInvoicesByPatientId(id)
+            queries.deleteById(id)
+        }
     }
 
     fun getAllSortedByLastVisit(): List<Patient> {

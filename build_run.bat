@@ -7,8 +7,7 @@ taskkill /F /IM gradle.exe 2>nul
 taskkill /F /IM java.exe 2>nul
 timeout /T 3 /NOBREAK >nul
 
-echo [2/6] Очищаю кэш БД и сборки...
-rmdir /s /q "%USERPROFILE%\.dental-clinic" 2>nul
+echo [2/6] Очищаю кэш сборки...
 cd /d "%~dp0"
 rmdir /s /q ".gradle" 2>nul
 rmdir /s /q "composeApp\build" 2>nul
@@ -60,7 +59,7 @@ if errorlevel 1 (
 )
 
 echo [4/6] Запускаю Gradle сборку...
-call gradlew.bat :composeApp:clean :composeApp:run --no-daemon --no-configuration-cache
+call gradlew.bat :composeApp:run --no-daemon --no-configuration-cache
 set EXITCODE=%ERRORLEVEL%
 
 if %EXITCODE% neq 0 (

@@ -69,6 +69,12 @@ INSERT OR REPLACE INTO VisitPositionEntity(id, visitId, positionId, toothNumbers
 deleteVisitPositionsByVisitId:
 DELETE FROM VisitPositionEntity WHERE visitId = ?;
 
+deleteVisitPositionsByPatientId:
+DELETE FROM VisitPositionEntity WHERE visitId IN (SELECT id FROM VisitEntity WHERE patientId = ?);
+
+deleteVisitsByPatientId:
+DELETE FROM VisitEntity WHERE patientId = ?;
+
 getLastInsertId:
 SELECT last_insert_rowid();
 

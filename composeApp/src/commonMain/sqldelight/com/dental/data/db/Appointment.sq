@@ -38,6 +38,9 @@ UPDATE AppointmentEntity SET status = ? WHERE id = ?;
 deleteById:
 DELETE FROM AppointmentEntity WHERE id = ?;
 
+deleteByPatientId:
+DELETE FROM AppointmentEntity WHERE patientId = ?;
+
 getAll:
 SELECT * FROM AppointmentEntity;
 

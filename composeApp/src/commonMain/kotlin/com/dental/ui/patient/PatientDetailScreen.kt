@@ -124,8 +124,7 @@ fun PatientDetailScreen(
     }
 
     fun loadAllPositions() {
-        visitPositionRepository.ensurePosition("Перебазировка протеза")
-        visitPositionRepository.ensurePosition("Оплата")
+        visitPositionRepository.ensurePositionsOrder(com.dental.data.SeedData.POSITION_NAMES)
         allPositions = visitPositionRepository.getAllPositions()
     }
 
