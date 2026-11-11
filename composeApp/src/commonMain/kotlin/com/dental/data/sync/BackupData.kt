@@ -2,6 +2,13 @@ package com.dental.data.sync
 
 import kotlinx.serialization.Serializable
 
+data class BackupInspection(
+    val patientCount: Int,
+    val deviceName: String?,
+    val lastSyncedAt: Long?,
+    val droppedRecords: Int
+)
+
 @Serializable
 data class BackupData(
     val version: Int = 2,
@@ -32,6 +39,7 @@ data class BackupPatient(
     val email: String? = null,
     val sex: String,
     val notes: String? = null,
+    val referrer: String? = null,
     val createdAt: Long,
     val updatedAt: Long
 )

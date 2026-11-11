@@ -10,6 +10,7 @@ data class Patient(
     val email: String? = null,
     val sex: Sex = Sex.MALE,
     val notes: String? = null,
+    val referrer: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0
 )

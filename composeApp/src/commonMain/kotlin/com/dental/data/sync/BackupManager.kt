@@ -28,7 +28,7 @@ class BackupManager(private val database: DentalDatabase) {
     }
 
     fun exportAll(): BackupData = queries.transactionWithResult { readSnapshot() }
-        .let(::removeOrphanedRecords)
+        .let { sanitizeBackupSnapshot(it).data }
         .also(::validateBackupSnapshot)
 
     private fun readSnapshot(): BackupData {
@@ -36,7 +36,7 @@ class BackupManager(private val database: DentalDatabase) {
             BackupPatient(
                 id = e.id, lastName = e.lastName, firstName = e.firstName,
                 middleName = e.middleName, birthDate = e.birthDate, phone = e.phone,
-                email = e.email, sex = e.sex, notes = e.notes,
+                email = e.email, sex = e.sex, notes = e.notes, referrer = e.referrer,
                 createdAt = e.createdAt, updatedAt = e.updatedAt
             )
         }
@@ -145,25 +145,8 @@ class BackupManager(private val database: DentalDatabase) {
         return json.encodeToString(exportAll())
     }
 
-    private fun removeOrphanedRecords(data: BackupData): BackupData {
-        val patientIds = data.patients.mapTo(mutableSetOf()) { it.id }
-        val visitIds = data.visits.mapTo(mutableSetOf()) { it.id }
-        val positionIds = data.positions.mapTo(mutableSetOf()) { it.id }
-        val invoiceIds = data.invoices.mapTo(mutableSetOf()) { it.id }
-        return data.copy(
-            appointments = data.appointments.filter { it.patientId in patientIds },
-            teeth = data.teeth.filter { it.patientId in patientIds },
-            prostheticItems = data.prostheticItems.filter { it.patientId in patientIds },
-            diagnoses = data.diagnoses.filter { it.patientId in patientIds },
-            treatmentPlans = data.treatmentPlans.filter { it.patientId in patientIds },
-            visits = data.visits.filter { it.patientId in patientIds },
-            visitPositions = data.visitPositions.filter { it.visitId in visitIds && it.positionId in positionIds },
-            invoices = data.invoices.filter { it.patientId in patientIds },
-            invoiceItems = data.invoiceItems.filter { it.invoiceId in invoiceIds }
-        )
-    }
-
-    fun importFromData(data: BackupData) {
+    fun importFromData(rawData: BackupData) {
+        val data = sanitizeBackupSnapshot(rawData).data
         validateBackupSnapshot(data)
         queries.transaction {
             clearAllData()
@@ -184,7 +167,8 @@ class BackupManager(private val database: DentalDatabase) {
                     id = p.id, lastName = p.lastName, firstName = p.firstName,
                     middleName = p.middleName, birthDate = p.birthDate,
                     phone = p.phone, email = p.email, sex = p.sex,
-                    notes = p.notes, createdAt = p.createdAt, updatedAt = p.updatedAt
+                    notes = p.notes, referrer = p.referrer,
+                    createdAt = p.createdAt, updatedAt = p.updatedAt
                 )
             }
             data.appointments.forEach { a ->
@@ -263,6 +247,16 @@ class BackupManager(private val database: DentalDatabase) {
 
     fun parseMetadata(jsonString: String): BackupData = parseBackupSnapshot(jsonString)
 
+    fun inspectJson(jsonString: String): BackupInspection {
+        val report = parseBackupSnapshotWithReport(jsonString)
+        return BackupInspection(
+            patientCount = report.data.patients.size,
+            deviceName = report.data.syncedByDevice,
+            lastSyncedAt = report.data.lastSyncedAt,
+            droppedRecords = report.droppedRecords
+        )
+    }
+
     private fun clearAllData() {
         queries.patientQueries.deleteAll()
         queries.appointmentQueries.deleteAll()
@@ -280,22 +274,70 @@ class BackupManager(private val database: DentalDatabase) {
 
 }
 
-internal fun parseBackupSnapshot(jsonString: String): BackupData {
+internal data class BackupSnapshotReport(
+    val data: BackupData,
+    val droppedRecords: Int
+)
+
+internal fun parseBackupSnapshot(jsonString: String): BackupData = parseBackupSnapshotWithReport(jsonString).data
+
+internal fun parseBackupSnapshotWithReport(jsonString: String): BackupSnapshotReport {
     if (jsonString.length > MAX_IMPORT_CHARS) {
         throw IllegalArgumentException("Файл слишком большой для восстановления")
     }
     val root = snapshotJson.parseToJsonElement(jsonString)
     val keys = (root as? kotlinx.serialization.json.JsonObject)?.keys
         ?: throw IllegalArgumentException("Файл не является объектом JSON")
-    if (keys.isEmpty()) {
-        throw IllegalArgumentException("Резервная копия пуста")
+    if (keys.none { it in DATA_SECTIONS }) {
+        throw IllegalArgumentException("Файл не является резервной копией приложения")
     }
-    val missingSections = REQUIRED_SECTIONS.filterNot(keys::contains)
-    val legacyExport = keys.contains("lastSyncedAt") && keys.contains("syncedByDevice")
-    if (missingSections.isNotEmpty() && !legacyExport) {
-        throw IllegalArgumentException("Резервная копия неполная: отсутствуют разделы ${missingSections.joinToString(", ")}")
-    }
-    return snapshotJson.decodeFromString<BackupData>(jsonString).also(::validateBackupSnapshot)
+    val decoded = snapshotJson.decodeFromString<BackupData>(jsonString)
+    val report = sanitizeBackupSnapshot(decoded)
+    validateBackupSnapshot(report.data)
+    return report
+}
+
+/**
+ * Удаляет записи, ссылающиеся на уже удалённых пациентов, визиты, позиции и счета.
+ * Такие «осиротевшие» строки остаются в файлах, созданных прошлыми версиями приложения,
+ * поэтому при импорте они отбрасываются, а не считаются повреждением файла.
+ */
+internal fun sanitizeBackupSnapshot(data: BackupData): BackupSnapshotReport {
+    val patientIds = data.patients.mapTo(mutableSetOf()) { it.id }
+    val appointments = data.appointments.filter { it.patientId in patientIds }
+    val teeth = data.teeth.filter { it.patientId in patientIds }
+    val prostheticItems = data.prostheticItems.filter { it.patientId in patientIds }
+    val diagnoses = data.diagnoses.filter { it.patientId in patientIds }
+    val treatmentPlans = data.treatmentPlans.filter { it.patientId in patientIds }
+    val visits = data.visits.filter { it.patientId in patientIds }
+    val visitIds = visits.mapTo(mutableSetOf()) { it.id }
+    val positionIds = data.positions.mapTo(mutableSetOf()) { it.id }
+    val visitPositions = data.visitPositions.filter { it.visitId in visitIds && it.positionId in positionIds }
+    val invoices = data.invoices.filter { it.patientId in patientIds }
+    val invoiceIds = invoices.mapTo(mutableSetOf()) { it.id }
+    val invoiceItems = data.invoiceItems.filter { it.invoiceId in invoiceIds }
+
+    val cleaned = data.copy(
+        appointments = appointments,
+        teeth = teeth,
+        prostheticItems = prostheticItems,
+        diagnoses = diagnoses,
+        treatmentPlans = treatmentPlans,
+        visits = visits,
+        visitPositions = visitPositions,
+        invoices = invoices,
+        invoiceItems = invoiceItems
+    )
+    val dropped = (data.appointments.size - appointments.size) +
+        (data.teeth.size - teeth.size) +
+        (data.prostheticItems.size - prostheticItems.size) +
+        (data.diagnoses.size - diagnoses.size) +
+        (data.treatmentPlans.size - treatmentPlans.size) +
+        (data.visits.size - visits.size) +
+        (data.visitPositions.size - visitPositions.size) +
+        (data.invoices.size - invoices.size) +
+        (data.invoiceItems.size - invoiceItems.size)
+    return BackupSnapshotReport(cleaned, dropped)
 }
 
 internal fun validateBackupSnapshot(data: BackupData) {
@@ -387,8 +429,7 @@ private val snapshotJson = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
 }
-private val REQUIRED_SECTIONS = setOf(
-    "version",
+private val DATA_SECTIONS = setOf(
     "patients",
     "appointments",
     "teeth",

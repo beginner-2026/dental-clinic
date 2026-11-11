@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -25,14 +26,13 @@ fun PatientScreen(
     patients: List<Patient>,
     onAddPatient: () -> Unit,
     onDeletePatient: (Long) -> Unit,
+    onEditPatient: (Patient) -> Unit,
     onReload: () -> Unit,
     onPatientClick: (Patient) -> Unit = {},
     onMenuClick: () -> Unit = {}
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf<Patient?>(null) }
-
-    var deleteMode by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -41,13 +41,6 @@ fun PatientScreen(
                 actions = {
                     IconButton(onClick = onMenuClick) {
                         Icon(Icons.Default.Menu, contentDescription = "Меню")
-                    }
-                    IconButton(onClick = { deleteMode = !deleteMode }) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Режим удаления",
-                            tint = if (deleteMode) Color(0xFFE53935) else LocalContentColor.current
-                        )
                     }
                 }
             )
@@ -86,7 +79,7 @@ fun PatientScreen(
                 items(filteredPatients, key = { it.id }) { patient ->
                     PatientCard(
                         patient = patient,
-                        deleteMode = deleteMode,
+                        onEdit = { onEditPatient(patient) },
                         onDelete = { showDeleteConfirm = patient },
                         onClick = { onPatientClick(patient) }
                     )
@@ -119,7 +112,12 @@ fun PatientScreen(
 }
 
 @Composable
-private fun PatientCard(patient: Patient, deleteMode: Boolean = false, onDelete: () -> Unit, onClick: () -> Unit = {}) {
+private fun PatientCard(
+    patient: Patient,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onClick: () -> Unit = {}
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -129,7 +127,7 @@ private fun PatientCard(patient: Patient, deleteMode: Boolean = false, onDelete:
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -146,16 +144,27 @@ private fun PatientCard(patient: Patient, deleteMode: Boolean = false, onDelete:
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold
                 )
-
-            }
-            if (deleteMode) {
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Удалить",
-                        tint = Color(0xFFE53935)
+                if (!patient.phone.isNullOrBlank()) {
+                    Text(
+                        text = patient.phone,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+            IconButton(onClick = onEdit) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Редактировать",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Удалить",
+                    tint = Color(0xFFE53935)
+                )
             }
         }
     }

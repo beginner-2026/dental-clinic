@@ -69,10 +69,28 @@ class PatientRepository(private val db: DentalDatabase) {
             email = patient.email,
             sex = patient.sex.name,
             notes = patient.notes,
+            referrer = patient.referrer,
             createdAt = now,
             updatedAt = now
         )
         return queries.getLastInsertId().executeAsOne()
+    }
+
+    fun update(patient: Patient) {
+        val now = Clock.System.now().toEpochMilliseconds()
+        queries.update(
+            lastName = patient.lastName,
+            firstName = patient.firstName,
+            middleName = patient.middleName,
+            birthDate = patient.birthDate,
+            phone = patient.phone,
+            email = patient.email,
+            sex = patient.sex.name,
+            notes = patient.notes,
+            referrer = patient.referrer,
+            updatedAt = now,
+            id = patient.id
+        )
     }
 
     private fun PatientEntity.toPatient(): Patient {
@@ -86,6 +104,7 @@ class PatientRepository(private val db: DentalDatabase) {
             email = email,
             sex = Sex.valueOf(sex),
             notes = notes,
+            referrer = referrer,
             createdAt = createdAt,
             updatedAt = updatedAt
         )

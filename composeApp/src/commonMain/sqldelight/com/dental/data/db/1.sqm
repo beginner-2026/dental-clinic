@@ -1,0 +1,1 @@
+ALTER TABLE PatientEntity ADD COLUMN referrer TEXT;

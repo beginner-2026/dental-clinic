@@ -211,10 +211,16 @@ actual class CloudSyncStorage {
                 deviceName = null
                 lastAccessError = when (error) {
                     is IllegalArgumentException, is kotlinx.serialization.SerializationException ->
-                        "Файл sync.json повреждён или имеет неверный формат"
+                        syncFormatError(error)
                     else -> "Не удалось прочитать sync.json: ${error.message ?: "ошибка файловой системы"}"
                 }
             }
+    }
+
+    private fun syncFormatError(error: Throwable): String {
+        val detail = error.message?.trim()?.takeIf { it.isNotEmpty() }
+            ?: return "Файл sync.json повреждён или имеет неверный формат"
+        return "Файл sync.json повреждён или имеет неверный формат: $detail"
     }
 
     private fun readCurrentContent(): RemoteContent? {
@@ -363,14 +369,21 @@ actual class CloudSyncStorage {
         if (!file.isFile) return@synchronized CloudSyncResult.Failure("В Google Диске нет файла sync.json")
         runCatching {
             val content = readContent(file)
-            val data = parseBackupSnapshot(content.text)
+            val report = parseBackupSnapshotWithReport(content.text)
             inspectContent(content)
             if (lastAccessError != null) throw IllegalStateException(lastAccessError)
-            CloudSyncResult.Success(CloudBackupSnapshot(content.text, data.patients.size, data.syncedByDevice))
+            CloudSyncResult.Success(
+                CloudBackupSnapshot(
+                    json = content.text,
+                    patientCount = report.data.patients.size,
+                    deviceName = report.data.syncedByDevice,
+                    droppedRecords = report.droppedRecords
+                )
+            )
         }.getOrElse { error ->
             val message = when (error) {
                 is IllegalArgumentException, is kotlinx.serialization.SerializationException ->
-                    "Файл sync.json повреждён или имеет неверный формат"
+                    syncFormatError(error)
                 else -> "Не удалось прочитать sync.json: ${error.message ?: "ошибка Google Диска"}"
             }
             lastAccessError = message

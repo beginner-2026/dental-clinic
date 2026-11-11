@@ -8,7 +8,8 @@ sealed interface CloudSyncResult<out T> {
 data class CloudBackupSnapshot(
     val json: String,
     val patientCount: Int,
-    val deviceName: String?
+    val deviceName: String?,
+    val droppedRecords: Int = 0
 )
 
 expect class CloudSyncStorage() {

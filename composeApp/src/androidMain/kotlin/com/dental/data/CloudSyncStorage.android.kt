@@ -106,9 +106,15 @@ actual class CloudSyncStorage {
         deviceName = null
         lastAccessError = when (error) {
             is IllegalArgumentException, is kotlinx.serialization.SerializationException ->
-                "Файл sync.json повреждён или имеет неверный формат"
+                syncFormatError(error)
             else -> "Не удалось прочитать sync.json: ${error.message ?: "ошибка Google Диска"}"
         }
+    }
+
+    private fun syncFormatError(error: Throwable): String {
+        val detail = error.message?.trim()?.takeIf { it.isNotEmpty() }
+            ?: return "Файл sync.json повреждён или имеет неверный формат"
+        return "Файл sync.json повреждён или имеет неверный формат: $detail"
     }
 
     private fun readContent(uri: Uri): RemoteContent {
@@ -285,9 +291,16 @@ actual class CloudSyncStorage {
         }
         runCatching {
             val content = readContent(uri)
-            val data = parseBackupSnapshot(content.text)
+            val report = parseBackupSnapshotWithReport(content.text)
             applyRemoteContent(content)
-            CloudSyncResult.Success(CloudBackupSnapshot(content.text, data.patients.size, data.syncedByDevice))
+            CloudSyncResult.Success(
+                CloudBackupSnapshot(
+                    json = content.text,
+                    patientCount = report.data.patients.size,
+                    deviceName = report.data.syncedByDevice,
+                    droppedRecords = report.droppedRecords
+                )
+            )
         }.getOrElse { error ->
             setReadError(error)
             CloudSyncResult.Failure(lastAccessError ?: "Не удалось прочитать sync.json")

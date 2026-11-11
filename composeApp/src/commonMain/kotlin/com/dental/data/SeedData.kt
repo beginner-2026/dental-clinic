@@ -133,6 +133,7 @@ object SeedData {
                 email = null,
                 sex = if (last.endsWith("а") || last.endsWith("я")) Sex.FEMALE.name else Sex.MALE.name,
                 notes = null,
+                referrer = null,
                 createdAt = now,
                 updatedAt = now
             )

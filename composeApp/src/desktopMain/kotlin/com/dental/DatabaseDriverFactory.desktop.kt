@@ -22,6 +22,9 @@ actual class DatabaseDriverFactory {
             try {
                 driver.execute(null, "ALTER TABLE ToothEntity ADD COLUMN rootOption TEXT", 0, {})
             } catch (_: Exception) { }
+            try {
+                driver.execute(null, "ALTER TABLE PatientEntity ADD COLUMN referrer TEXT", 0, {})
+            } catch (_: Exception) { }
         }
 
         return driver

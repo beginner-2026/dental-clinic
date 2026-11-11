@@ -37,6 +37,7 @@ import com.dental.ui.home.HomeScreen
 import com.dental.ui.navigation.AppScreen
 import com.dental.ui.odontogram.OdontogramViewModel
 import com.dental.ui.patient.PatientDetailScreen
+import com.dental.ui.patient.PatientEditDialog
 import com.dental.ui.patient.PatientScreen
 import com.dental.ui.pricelist.PriceListScreen
 import com.dental.ui.settings.SettingsScreen
@@ -119,6 +120,7 @@ fun App(
     }
 
     var showAddPatientDialog by rememberSaveable { mutableStateOf(false) }
+    var patientToEdit by remember { mutableStateOf<Patient?>(null) }
     var newPatientLastName by rememberSaveable { mutableStateOf("") }
     var newPatientFirstName by rememberSaveable { mutableStateOf("") }
     var newPatientMiddleName by rememberSaveable { mutableStateOf("") }
@@ -157,7 +159,11 @@ fun App(
                                 visitPositionRepository = visitPositionRepo,
                                 priceListRepository = priceListRepo,
                                 onBack = { selectedPatientId = -1L },
-                                onMenuClick = { drawerOpen = true }
+                                onMenuClick = { drawerOpen = true },
+                                onUpdatePatient = { updated ->
+                                    patientRepo.update(updated)
+                                    reloadPatients()
+                                }
                             )
                         } else {
                             when (currentScreen) {
@@ -169,6 +175,7 @@ fun App(
                                             patientRepo.delete(id)
                                             reloadPatients()
                                         },
+                                        onEditPatient = { patientToEdit = it },
                                         onReload = { reloadPatients() },
                                         onPatientClick = { selectedPatientId = it.id },
                                         onMenuClick = { drawerOpen = true }
@@ -359,6 +366,18 @@ fun App(
                     newPatientMiddleName = ""
                     newPatientPhone = ""
                 }) { Text("Отмена") }
+            }
+        )
+    }
+
+    patientToEdit?.let { patient ->
+        PatientEditDialog(
+            patient = patient,
+            onDismiss = { patientToEdit = null },
+            onSave = { updated ->
+                patientRepo.update(updated)
+                patientToEdit = null
+                reloadPatients()
             }
         )
     }

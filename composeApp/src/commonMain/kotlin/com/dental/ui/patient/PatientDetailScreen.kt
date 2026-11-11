@@ -86,7 +86,8 @@ fun PatientDetailScreen(
     visitPositionRepository: VisitPositionRepository,
     priceListRepository: PriceListRepository,
     onBack: () -> Unit,
-    onMenuClick: () -> Unit = {}
+    onMenuClick: () -> Unit = {},
+    onUpdatePatient: (Patient) -> Unit = {}
 ) {
     val state by odontogramViewModel.state.collectAsState()
     var isQuadrantView by rememberSaveable { mutableStateOf(false) }
@@ -118,6 +119,9 @@ fun PatientDetailScreen(
     var selectedPositionIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     var positionToothNumbers by remember { mutableStateOf<Map<Long, String>>(emptyMap()) }
     var visitDateMillis by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
+
+    var showReferrerDialog by remember { mutableStateOf(false) }
+    var referrerInput by remember { mutableStateOf("") }
 
     fun loadVisits() {
         visits = visitPositionRepository.getVisitsByPatientId(patient.id)
@@ -219,6 +223,93 @@ fun PatientDetailScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             )
+
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = buildString {
+                            append(patient.lastName)
+                            append(" ")
+                            append(patient.firstName)
+                            if (!patient.middleName.isNullOrBlank()) {
+                                append(" ")
+                                append(patient.middleName)
+                            }
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Рекомендатель",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            IconButton(
+                                onClick = {
+                                    referrerInput = patient.referrer.orEmpty()
+                                    showReferrerDialog = true
+                                },
+                                modifier = Modifier.size(30.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = if (patient.referrer.isNullOrBlank()) {
+                                        "Добавить рекомендателя"
+                                    } else {
+                                        "Изменить рекомендателя"
+                                    },
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            if (!patient.referrer.isNullOrBlank()) {
+                                IconButton(
+                                    onClick = { onUpdatePatient(patient.copy(referrer = null)) },
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Удалить рекомендателя",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = Color(0xFFE53935)
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = patient.referrer?.takeIf { it.isNotBlank() } ?: "не указан",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (!patient.referrer.isNullOrBlank()) {
+                                FontWeight.SemiBold
+                            } else {
+                                FontWeight.Normal
+                            },
+                            color = if (!patient.referrer.isNullOrBlank()) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
 
             if (patient.notes != null) {
                 Row(
@@ -761,6 +852,50 @@ fun PatientDetailScreen(
                 }
             )
         }
+    }
+
+    if (showReferrerDialog) {
+        AlertDialog(
+            onDismissRequest = { showReferrerDialog = false },
+            title = { Text("Рекомендатель") },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = referrerInput,
+                        onValueChange = { referrerInput = it },
+                        label = { Text("Ф.И.О. рекомендателя") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = referrerInput.isNotBlank(),
+                    onClick = {
+                        onUpdatePatient(patient.copy(referrer = referrerInput.trim()))
+                        showReferrerDialog = false
+                    }
+                ) { Text("Сохранить") }
+            },
+            dismissButton = {
+                Row {
+                    if (!patient.referrer.isNullOrBlank()) {
+                        TextButton(
+                            onClick = {
+                                onUpdatePatient(patient.copy(referrer = null))
+                                showReferrerDialog = false
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFE53935))
+                        ) { Text("Удалить") }
+                    }
+                    TextButton(onClick = { showReferrerDialog = false }) { Text("Отмена") }
+                }
+            }
+        )
     }
 }
 

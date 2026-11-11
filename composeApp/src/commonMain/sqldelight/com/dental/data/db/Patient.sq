@@ -8,6 +8,7 @@ CREATE TABLE PatientEntity (
     email TEXT,
     sex TEXT NOT NULL DEFAULT 'MALE',
     notes TEXT,
+    referrer TEXT,
     createdAt INTEGER NOT NULL,
     updatedAt INTEGER NOT NULL
 );
@@ -24,12 +25,18 @@ WHERE lastName LIKE ? || '%' OR firstName LIKE ? || '%' OR phone LIKE ? || '%'
 ORDER BY lastName, firstName;
 
 insert:
-INSERT INTO PatientEntity(lastName, firstName, middleName, birthDate, phone, email, sex, notes, createdAt, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO PatientEntity(lastName, firstName, middleName, birthDate, phone, email, sex, notes, referrer, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertWithId:
-INSERT OR REPLACE INTO PatientEntity(id, lastName, firstName, middleName, birthDate, phone, email, sex, notes, createdAt, updatedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO PatientEntity(id, lastName, firstName, middleName, birthDate, phone, email, sex, notes, referrer, createdAt, updatedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE PatientEntity
+SET lastName = ?, firstName = ?, middleName = ?, birthDate = ?, phone = ?, email = ?,
+    sex = ?, notes = ?, referrer = ?, updatedAt = ?
+WHERE id = ?;
 
 getLastInsertId:
 SELECT last_insert_rowid();

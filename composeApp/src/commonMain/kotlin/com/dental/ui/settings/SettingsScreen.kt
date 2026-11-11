@@ -26,7 +26,8 @@ private data class PendingRestore(
     val json: String,
     val source: RestoreSource,
     val patientCount: Int,
-    val deviceName: String?
+    val deviceName: String?,
+    val droppedRecords: Int = 0
 )
 
 private enum class RestoreSource {
@@ -285,8 +286,14 @@ fun SettingsScreen(
                             if (json == null) {
                                 showStatus("Нет сохранённой резервной копии")
                             } else {
-                                val data = withContext(Dispatchers.IO) { backupManager.parseMetadata(json) }
-                                pendingRestore = PendingRestore(json, RestoreSource.LOCAL, data.patients.size, data.syncedByDevice)
+                                val inspection = withContext(Dispatchers.IO) { backupManager.inspectJson(json) }
+                                pendingRestore = PendingRestore(
+                                    json = json,
+                                    source = RestoreSource.LOCAL,
+                                    patientCount = inspection.patientCount,
+                                    deviceName = inspection.deviceName,
+                                    droppedRecords = inspection.droppedRecords
+                                )
                                 showStatus("Проверьте данные резервной копии перед восстановлением")
                             }
                         } catch (error: CancellationException) {
@@ -405,7 +412,13 @@ fun SettingsScreen(
                                 when (val result = withContext(Dispatchers.IO) { cloudSyncStorage.load() }) {
                                     is CloudSyncResult.Success -> {
                                         val snapshot = result.value
-                                        pendingRestore = PendingRestore(snapshot.json, RestoreSource.CLOUD, snapshot.patientCount, snapshot.deviceName)
+                                        pendingRestore = PendingRestore(
+                                            json = snapshot.json,
+                                            source = RestoreSource.CLOUD,
+                                            patientCount = snapshot.patientCount,
+                                            deviceName = snapshot.deviceName,
+                                            droppedRecords = snapshot.droppedRecords
+                                        )
                                         refreshSyncStatus()
                                         showStatus("Облачные данные найдены. Подтвердите замену локальной базы")
                                     }
@@ -479,14 +492,21 @@ fun SettingsScreen(
             title = { Text("Заменить локальные данные?") },
             text = {
                 Text(
-                    if (restore.source == RestoreSource.CLOUD) {
-                        "В Google Диске найдено ${restore.patientCount} пациентов" +
-                            (restore.deviceName?.let { " (с устройства: $it)" } ?: "") +
-                            ". Текущие данные сначала будут сохранены в резервную копию, затем заменены и отправлены обратно в Google Диск."
-                    } else {
-                        "В локальной резервной копии найдено ${restore.patientCount} пациентов" +
-                            (restore.deviceName?.let { " (с устройства: $it)" } ?: "") +
-                            ". Текущие данные сначала будут сохранены, затем заменены."
+                    buildString {
+                        if (restore.source == RestoreSource.CLOUD) {
+                            append("В Google Диске найдено ${restore.patientCount} пациентов")
+                        } else {
+                            append("В локальной резервной копии найдено ${restore.patientCount} пациентов")
+                        }
+                        restore.deviceName?.let { append(" (с устройства: $it)") }
+                        if (restore.source == RestoreSource.CLOUD) {
+                            append(". Текущие данные сначала будут сохранены в резервную копию, затем заменены и отправлены обратно в Google Диск.")
+                        } else {
+                            append(". Текущие данные сначала будут сохранены, затем заменены.")
+                        }
+                        if (restore.droppedRecords > 0) {
+                            append("\n\nВ файле найдено ${restore.droppedRecords} записей, ссылающихся на уже удалённых пациентов. Они будут пропущены при восстановлении.")
+                        }
                     }
                 )
             },
